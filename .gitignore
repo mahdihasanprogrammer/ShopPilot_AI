@@ -20,8 +20,10 @@ client/.env.production
 server/.env
 server/.env.production
 # Keep .example files — those are safe to commit
-!**/.env.example
-!**/.env.local.example
+!.env.example
+!.env.local.example
+!server/.env.example
+!client/.env.local.example
 
 # Logs
 npm-debug.log*
