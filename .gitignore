@@ -5,12 +5,23 @@ dist/
 build/
 out/
 
-# Environments
+# Environments — never commit real secrets
 .env
 .env.local
+.env.development
 .env.development.local
 .env.test.local
+.env.production
 .env.production.local
+# Subdirectory env files
+client/.env
+client/.env.local
+client/.env.production
+server/.env
+server/.env.production
+# Keep .example files — those are safe to commit
+!**/.env.example
+!**/.env.local.example
 
 # Logs
 npm-debug.log*
