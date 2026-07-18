@@ -414,6 +414,33 @@ app.post("/api/orders", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+app.patch("/api/orders/:id", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const database = await getDatabase();
+    const id = req.params.id;
+    const { status } = req.body;
+
+    const validStatuses = ["pending", "paid", "shipped", "delivered"];
+    if (!status || !validStatuses.includes(status)) {
+      return sendResponse(res, 400, false, `Invalid status. Must be one of: ${validStatuses.join(", ")}`);
+    }
+
+    const query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
+    const order = await database.collection("orders").findOne(query);
+
+    if (!order) {
+      return sendResponse(res, 404, false, "Order not found.");
+    }
+
+    await database.collection("orders").updateOne(query, { $set: { status } });
+    const updatedDoc = await database.collection("orders").findOne(query);
+
+    return sendResponse(res, 200, true, "Order status updated successfully", updatedDoc);
+  } catch (error: any) {
+    return sendResponse(res, 500, false, "Failed to update order status.", null, error.message);
+  }
+});
+
 // ---- Admin Analytics Routes ----
 
 app.get("/api/orders/analytics/revenue", requireAdmin, async (req: Request, res: Response) => {
