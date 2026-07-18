@@ -142,28 +142,40 @@ function sendResponse(
 }
 
 // ---- Authentication Middlewares ----
-// Sessions are validated by calling the Next.js Better Auth endpoint.
-// BETTER_AUTH_URL must point to the Next.js app (e.g. http://localhost:3000).
+// Client sends Authorization: Bearer <session-token> on every request.
+// Express validates the token by calling the Next.js /api/auth/get-session endpoint.
+// BETTER_AUTH_URL must point to the Next.js app (default: http://localhost:3000).
 
 async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
     const nextjsAuthUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
 
-    // Call the Next.js Better Auth get-session endpoint, forwarding cookies
+    // Extract Bearer token from Authorization header
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+    if (!token) {
+      return sendResponse(res, 401, false, "Unauthorized. No session token provided. Please sign in.");
+    }
+
+    // Validate the token via the Next.js Better Auth endpoint
     const sessionRes = await fetch(`${nextjsAuthUrl}/api/auth/get-session`, {
       headers: {
-        cookie: req.headers.cookie || "",
-        "x-forwarded-for": req.ip || "",
+        Authorization: `Bearer ${token}`,
       },
     });
 
-    const session = await sessionRes.json();
-
-    if (!session?.user) {
-      return sendResponse(res, 401, false, "Unauthorized. Please sign in.");
+    if (!sessionRes.ok) {
+      return sendResponse(res, 401, false, "Unauthorized. Session validation failed.");
     }
 
-    // Attach user to request
+    const session = await sessionRes.json() as any;
+
+    if (!session?.user) {
+      return sendResponse(res, 401, false, "Unauthorized. Invalid or expired session.");
+    }
+
+    // Attach validated user to request object
     req.user = {
       id: session.user.id,
       name: session.user.name,
@@ -181,7 +193,7 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  requireAuth(req, res, () => {
+  await requireAuth(req, res, () => {
     if (!req.user || req.user.role !== "admin") {
       return sendResponse(res, 403, false, "Forbidden. Admin access required.");
     }
