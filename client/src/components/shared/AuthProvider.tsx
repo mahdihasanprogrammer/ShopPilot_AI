@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useEffect } from "react";
 import { useSession } from "@/lib/auth-client";
+import { setApiSessionToken } from "@/lib/api";
 
 interface AuthContextType {
   session: any;
@@ -23,6 +24,13 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: sessionData, isPending } = useSession();
+
+  // Sync session token into the api.ts store so every Express API call
+  // automatically includes Authorization: Bearer <token>
+  useEffect(() => {
+    const token = (sessionData?.session as any)?.token || null;
+    setApiSessionToken(token);
+  }, [sessionData]);
 
   const user = sessionData?.user
     ? {

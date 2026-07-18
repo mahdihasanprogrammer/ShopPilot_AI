@@ -1,32 +1,45 @@
 import { ApiResponse } from "@/types";
 
-// NEXT_PUBLIC_API_URL should point to Express backend host, e.g. http://localhost:5000
-// /api prefix is appended here for all API routes
+// Express backend host — /api prefix is appended automatically
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api`;
 
+// ---- Session Token Store ----
+// The AuthProvider calls setApiSessionToken whenever the session changes.
+// This token is sent as Authorization: Bearer <token> on every Express API call
+// so the backend can validate the session without cookie cross-origin issues.
+let _sessionToken: string | null = null;
+
+export function setApiSessionToken(token: string | null) {
+  _sessionToken = token;
+}
+
+// ---- Core Request Function ----
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`;
-  
-  // Set default headers
+
   const headers = new Headers(options.headers);
+
   if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
+  }
+
+  // Attach session token as Bearer for Express backend auth
+  if (_sessionToken && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${_sessionToken}`);
   }
 
   const config: RequestInit = {
     ...options,
     headers,
-    // By default send cookies (important for Better Auth session management)
     credentials: options.credentials || "include",
   };
 
   try {
     const response = await fetch(url, config);
-    
-    // Handle streaming responses separately if needed, but for standard JSON:
+
     if (response.headers.get("Content-Type")?.includes("application/json")) {
       const data = await response.json();
       if (!response.ok) {
@@ -46,12 +59,8 @@ async function request<T>(
       };
     }
 
-    // Non-JSON successful response (e.g., text or empty response)
     const textData = await response.text();
-    return {
-      success: true,
-      data: textData as unknown as T,
-    };
+    return { success: true, data: textData as unknown as T };
   } catch (error: any) {
     console.error(`API Error calling ${endpoint}:`, error);
     return {
@@ -61,31 +70,32 @@ async function request<T>(
   }
 }
 
+// ---- HTTP Methods ----
 export const api = {
   get: <T>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { ...options, method: "GET" }),
-    
+
   post: <T>(endpoint: string, body?: any, options?: RequestInit) =>
     request<T>(endpoint, {
       ...options,
       method: "POST",
       body: body instanceof FormData ? body : JSON.stringify(body),
     }),
-    
+
   put: <T>(endpoint: string, body?: any, options?: RequestInit) =>
     request<T>(endpoint, {
       ...options,
       method: "PUT",
       body: body instanceof FormData ? body : JSON.stringify(body),
     }),
-    
+
   patch: <T>(endpoint: string, body?: any, options?: RequestInit) =>
     request<T>(endpoint, {
       ...options,
       method: "PATCH",
       body: body instanceof FormData ? body : JSON.stringify(body),
     }),
-    
+
   delete: <T>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { ...options, method: "DELETE" }),
 };
