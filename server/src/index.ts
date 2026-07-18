@@ -2,6 +2,9 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient, Db, ObjectId } from "mongodb";
+import { betterAuth } from "better-auth";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 
 // Load environment variables
 dotenv.config();
@@ -9,17 +12,100 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS and JSON parsing
+// Enable CORS
 app.use(cors({
   origin: process.env.CLIENT_URL || "http://localhost:3000",
   credentials: true
 }));
+
+// ---- MongoDB Connection Singleton ----
+
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017";
+const DATABASE_NAME = process.env.DATABASE_NAME || "shoppilot_db";
+
+const client = new MongoClient(MONGODB_URI);
+const db = client.db(DATABASE_NAME);
+
+async function getDatabase(): Promise<Db> {
+  return db;
+}
+
+// Connect to MongoDB and seed demo users
+client.connect()
+  .then(() => {
+    console.log(`Connected to MongoDB: ${DATABASE_NAME}`);
+    seedDemoUsers();
+  })
+  .catch((err) => console.error("MongoDB connection failed:", err));
+
+// ---- Better Auth Configuration ----
+
+export const auth = betterAuth({
+  database: mongodbAdapter(db, {
+    client,
+  }),
+  emailAndPassword: {
+    enabled: true,
+  },
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "user",
+        input: false, // Prevents users from manually overriding role during registration/update
+      },
+    },
+  },
+  secret: process.env.BETTER_AUTH_SECRET || "mock-better-auth-secret-key-12345",
+  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
+});
+
+async function seedDemoUsers() {
+  try {
+    const database = await getDatabase();
+    
+    const existingUser = await database.collection("user").findOne({ email: "user@shoppilot.com" });
+    if (!existingUser) {
+      await auth.api.signUpEmail({
+        body: {
+          name: "Demo User",
+          email: "user@shoppilot.com",
+          password: "Password123!",
+        }
+      });
+      console.log("Demo user seeded successfully.");
+    }
+    
+    const existingAdmin = await database.collection("user").findOne({ email: "admin@shoppilot.com" });
+    if (!existingAdmin) {
+      await auth.api.signUpEmail({
+        body: {
+          name: "Demo Admin",
+          email: "admin@shoppilot.com",
+          password: "Password123!",
+        }
+      });
+      await database.collection("user").updateOne(
+        { email: "admin@shoppilot.com" },
+        { $set: { role: "admin" } }
+      );
+      console.log("Demo admin seeded successfully.");
+    }
+  } catch (err: any) {
+    console.error("Seeding demo users failed:", err.message);
+  }
+}
+
+// Better Auth Mount - MUST run before body-parsing middlewares like express.json()
+app.all("/api/auth/*", toNodeHandler(auth));
+
+// Apply express.json() for other API routes
 app.use(express.json());
 
 // ---- TypeScript Interfaces ----
 
 export interface User {
-  _id?: ObjectId;
   id: string; // Better Auth ID
   name: string;
   email: string;
@@ -98,36 +184,6 @@ declare global {
   }
 }
 
-// ---- MongoDB Connection Singleton ----
-
-let client: MongoClient | null = null;
-let db: Db | null = null;
-
-async function getDatabase(): Promise<Db> {
-  if (db) return db;
-
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error("MONGODB_URI is not defined in environment variables");
-  }
-
-  const dbName = process.env.DATABASE_NAME || "shoppilot_db";
-  
-  try {
-    client = new MongoClient(uri);
-    await client.connect();
-    db = client.db(dbName);
-    console.log(`Successfully connected to MongoDB database: ${dbName}`);
-    return db;
-  } catch (error) {
-    console.error("Failed to connect to MongoDB:", error);
-    throw error;
-  }
-}
-
-// Initialize database connection on startup
-getDatabase().catch((err) => console.error("Initial DB connection failed:", err));
-
 // ---- Standard Response Helper ----
 
 function sendResponse(
@@ -150,73 +206,62 @@ function sendResponse(
 
 async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    // 1. Extract session token from Authorization Header or Cookies
-    let token = "";
-    
-    // Check Authorization header
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      token = authHeader.split(" ")[1];
-    }
-    
-    // If not found in header, check Cookies
-    if (!token && req.headers.cookie) {
-      const cookies = req.headers.cookie.split(";").reduce((acc, cookie) => {
-        const [key, val] = cookie.trim().split("=");
-        acc[key] = val;
-        return acc;
-      }, {} as Record<string, string>);
-      token = cookies["better-auth.session_token"] || cookies["better-auth.session-token"];
+    // 1. Verify session using Better Auth session tokens/cookies
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
+
+    if (!session || !session.user) {
+      // 2. Mock token overrides for early development/testing
+      let token = "";
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1];
+      }
+      if (!token && req.headers.cookie) {
+        const cookies = req.headers.cookie.split(";").reduce((acc, cookie) => {
+          const [key, val] = cookie.trim().split("=");
+          acc[key] = val;
+          return acc;
+        }, {} as Record<string, string>);
+        token = cookies["better-auth.session_token"] || cookies["better-auth.session-token"];
+      }
+
+      if (token === "demo-admin-token") {
+        req.user = {
+          id: "demo-admin-id",
+          name: "Demo Admin",
+          email: "admin@shoppilot.com",
+          role: "admin",
+          createdAt: new Date(),
+        };
+        return next();
+      }
+
+      if (token === "demo-user-token") {
+        req.user = {
+          id: "demo-user-id",
+          name: "Demo User",
+          email: "user@shoppilot.com",
+          role: "user",
+          createdAt: new Date(),
+        };
+        return next();
+      }
+
+      return sendResponse(res, 401, false, "Unauthorized. Session is invalid or expired.");
     }
 
-    if (!token) {
-      return sendResponse(res, 401, false, "Unauthorized. Session token is missing.");
-    }
+    // Attach user information to request
+    req.user = {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+      image: session.user.image || undefined,
+      role: (session.user.role as "user" | "admin") || "user",
+      createdAt: new Date(session.user.createdAt),
+    };
 
-    // 2. Early development mock fallbacks
-    if (token === "demo-admin-token") {
-      req.user = {
-        id: "demo-admin-id",
-        name: "Demo Admin",
-        email: "admin@shoppilot.com",
-        role: "admin",
-        createdAt: new Date(),
-      };
-      return next();
-    }
-
-    if (token === "demo-user-token") {
-      req.user = {
-        id: "demo-user-id",
-        name: "Demo User",
-        email: "user@shoppilot.com",
-        role: "user",
-        createdAt: new Date(),
-      };
-      return next();
-    }
-
-    // 3. Query Better Auth session database collection
-    const database = await getDatabase();
-    
-    // Locate active session matching session token
-    const session = await database.collection("session").findOne({ token });
-    if (!session) {
-      return sendResponse(res, 401, false, "Invalid session token.");
-    }
-
-    // Check expiration
-    if (new Date(session.expiresAt) < new Date()) {
-      return sendResponse(res, 401, false, "Session has expired.");
-    }
-
-    // Query matching user
-    const userDoc = await database.collection("user").findOne({ id: session.userId });
-    if (!userDoc) {
-      return sendResponse(res, 401, false, "User not found.");
-    }
-
-    req.user = userDoc as unknown as User;
     next();
   } catch (error: any) {
     console.error("Authentication middleware error:", error);
@@ -225,7 +270,6 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  // First run authentication check
   requireAuth(req, res, () => {
     if (!req.user || req.user.role !== "admin") {
       return sendResponse(res, 403, false, "Forbidden. Admin access required.");
@@ -239,8 +283,7 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
 // Base API status route
 app.get("/api/health", async (req: Request, res: Response) => {
   try {
-    const database = await getDatabase();
-    const isDbConnected = !!database;
+    const isDbConnected = !!db;
     return sendResponse(res, 200, true, "ShopPilot API is healthy", {
       databaseConnected: isDbConnected,
       timestamp: new Date()
@@ -248,11 +291,6 @@ app.get("/api/health", async (req: Request, res: Response) => {
   } catch (error: any) {
     return sendResponse(res, 500, false, "ShopPilot API is unhealthy", null, error.message);
   }
-});
-
-// Better Auth Mount Placeholder
-app.all("/api/auth/*", (req: Request, res: Response) => {
-  return sendResponse(res, 200, true, "Better Auth endpoint handler placeholder.");
 });
 
 // ---- Products Routes ----
@@ -319,7 +357,6 @@ app.get("/api/products/:id", async (req: Request, res: Response) => {
     const database = await getDatabase();
     const id = req.params.id;
 
-    // Handle both ObjectId and string IDs
     const query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
     const product = await database.collection("products").findOne(query);
 
@@ -377,7 +414,6 @@ app.patch("/api/products/:id", requireAdmin, async (req: Request, res: Response)
       return sendResponse(res, 404, false, "Product not found.");
     }
 
-    // Clean fields
     delete updates._id;
     if (updates.price) updates.price = parseFloat(updates.price);
 
@@ -415,7 +451,6 @@ app.get("/api/orders", requireAuth, async (req: Request, res: Response) => {
     const database = await getDatabase();
     const user = req.user!;
 
-    // Admins see all orders, regular users only see their own
     const query = user.role === "admin" ? {} : { userId: user.id };
     
     const orders = await database.collection("orders")
@@ -462,7 +497,6 @@ app.get("/api/orders/analytics/revenue", requireAdmin, async (req: Request, res:
   try {
     const database = await getDatabase();
     
-    // Group sales revenue by date (last 30 days)
     const pipeline = [
       {
         $match: {
@@ -481,7 +515,6 @@ app.get("/api/orders/analytics/revenue", requireAdmin, async (req: Request, res:
 
     const stats = await database.collection("orders").aggregate(pipeline).toArray();
     
-    // Format response data for Recharts
     const chartData = stats.map(item => ({
       date: item._id,
       revenue: item.revenue,
@@ -498,15 +531,13 @@ app.get("/api/orders/analytics/by-category", requireAdmin, async (req: Request, 
   try {
     const database = await getDatabase();
     
-    // Sum quantities sold grouped by product category
     const pipeline = [
       { $unwind: "$items" },
       {
-        // Lookup category from products collection (since orders only cache basic info)
         $lookup: {
           from: "products",
           localField: "items.productId",
-          foreignField: "id", // or _id depending on matching
+          foreignField: "id",
           as: "productDetails"
         }
       },
@@ -541,7 +572,6 @@ app.post("/api/payments/create-payment-intent", requireAuth, async (req: Request
       return sendResponse(res, 400, false, "Amount is required.");
     }
 
-    // Mock clientSecret setup for development before Stripe package wiring in Prompt 13
     const clientSecret = `pi_mock_intent_${new ObjectId().toString()}_secret_${Math.random().toString(36).substring(2)}`;
     
     return sendResponse(res, 200, true, "Payment intent created", {
@@ -554,7 +584,6 @@ app.post("/api/payments/create-payment-intent", requireAuth, async (req: Request
 });
 
 app.post("/api/payments/webhook", (req: Request, res: Response) => {
-  // Public webhook logic placeholder
   console.log("Payment webhook event received");
   return sendResponse(res, 200, true, "Stripe Webhook processed successfully.");
 });
@@ -563,7 +592,6 @@ app.post("/api/payments/webhook", (req: Request, res: Response) => {
 
 app.post("/api/ai/recommendations", requireAuth, async (req: Request, res: Response) => {
   try {
-    // Recommendation logic placeholder (to be wired to Claude API in Prompt 14)
     const mockRecommendations = [
       {
         id: "mock-prod-1",
@@ -584,7 +612,6 @@ app.post("/api/ai/recommendations", requireAuth, async (req: Request, res: Respo
 
 app.post("/api/ai/chat", requireAuth, async (req: Request, res: Response) => {
   try {
-    // Conversational stream assistant placeholder (to be wired to Claude API in Prompt 15)
     return sendResponse(res, 200, true, "Chat endpoint initialized. Stream will connect here.");
   } catch (error: any) {
     return sendResponse(res, 500, false, "AI chat assistant failed.", null, error.message);
