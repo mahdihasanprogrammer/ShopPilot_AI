@@ -1,6 +1,8 @@
 import { ApiResponse } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+// NEXT_PUBLIC_API_URL should point to Express backend host, e.g. http://localhost:5000
+// /api prefix is appended here for all API routes
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api`;
 
 async function request<T>(
   endpoint: string,

@@ -2,6 +2,7 @@ import { createAuthClient } from "better-auth/react";
 import { inferAdditionalFields } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
+  // Must point to the Express backend where Better Auth is mounted
   baseURL: process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:5000",
   plugins: [
     inferAdditionalFields({
