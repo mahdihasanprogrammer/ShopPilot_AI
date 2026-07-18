@@ -4,6 +4,18 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "@/lib/auth-client";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { FcGoogle } from "react-icons/fc";
+import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
+import { RiFlashlightFill } from "react-icons/ri";
+import { MdWarning } from "react-icons/md";
+
+// ---- Validation helpers ----
+function validateEmail(email: string): string | null {
+  if (!email.trim()) return "Email is required.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Please enter a valid email address.";
+  return null;
+}
 
 function LoginForm() {
   const router = useRouter();
@@ -12,31 +24,30 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
+
+  const validate = (): boolean => {
+    const newErrors: typeof errors = {};
+    const emailErr = validateEmail(email);
+    if (emailErr) newErrors.email = emailErr;
+    if (!password) newErrors.password = "Password is required.";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError("Please fill in all fields.");
-      return;
-    }
-
+    if (!validate()) return;
     setLoading(true);
-    setError(null);
-
+    setErrors({});
     try {
-      const response = await signIn.email({
-        email,
-        password,
-        callbackURL: callbackUrl,
-      });
-      
-      // Better Auth redirects automatically on success, but manually direct for fallback
+      await signIn.email({ email, password, callbackURL: callbackUrl });
       router.push(callbackUrl);
       router.refresh();
     } catch (err: any) {
-      setError(err.message || "Invalid credentials.");
+      setErrors({ form: err.message || "Invalid email or password. Please try again." });
       setLoading(false);
     }
   };
@@ -44,12 +55,9 @@ function LoginForm() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      await signIn.social({
-        provider: "google",
-        callbackURL: callbackUrl,
-      });
+      await signIn.social({ provider: "google", callbackURL: callbackUrl });
     } catch (err: any) {
-      setError(err.message || "Google authentication failed.");
+      setErrors({ form: err.message || "Google authentication failed." });
       setLoading(false);
     }
   };
@@ -57,23 +65,16 @@ function LoginForm() {
   const handleDemoLogin = async (role: "user" | "admin") => {
     const demoEmail = role === "admin" ? "admin@shoppilot.com" : "user@shoppilot.com";
     const demoPassword = "Password123!";
-
     setEmail(demoEmail);
     setPassword(demoPassword);
     setLoading(true);
-    setError(null);
-
+    setErrors({});
     try {
-      await signIn.email({
-        email: demoEmail,
-        password: demoPassword,
-      });
-      
-      // On success, redirect
+      await signIn.email({ email: demoEmail, password: demoPassword });
       router.push(callbackUrl);
       router.refresh();
     } catch (err: any) {
-      setError(err.message || `Demo ${role} login failed.`);
+      setErrors({ form: err.message || `Demo ${role} login failed.` });
       setLoading(false);
     }
   };
@@ -81,48 +82,63 @@ function LoginForm() {
   return (
     <div className="w-full max-w-md space-y-8 rounded-2xl border border-bg-secondary p-8 bg-background shadow-lg transition-all hover:shadow-xl">
       <div className="text-center">
-        <h2 className="text-3xl font-bold tracking-tight text-text-neutral">
-          Welcome Back
-        </h2>
-        <p className="mt-2 text-sm text-text-neutral/60">
-          Sign in to your ShopPilot account
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight text-text-neutral">Welcome Back</h1>
+        <p className="mt-2 text-sm text-text-neutral/60">Sign in to your ShopPilot account</p>
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 p-4 text-xs font-semibold text-red-600 border border-red-100 animate-shake">
-          ⚠️ {error}
+      {errors.form && (
+        <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-xs font-semibold text-red-600 border border-red-100">
+          <MdWarning className="h-4 w-4 shrink-0" />
+          {errors.form}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {/* Email */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-text-neutral/70 mb-1.5">
             Email Address
           </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@example.com"
-            className="w-full rounded-xl border border-bg-secondary bg-background px-4 py-3 text-sm text-text-neutral focus:border-primary focus:outline-none transition-all"
-            required
-            disabled={loading}
-          />
+          <div className="relative">
+            <HiOutlineMail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-neutral/40" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setErrors(p => ({ ...p, email: undefined })); }}
+              placeholder="name@example.com"
+              className={`w-full rounded-xl border ${errors.email ? "border-red-400 bg-red-50/30" : "border-bg-secondary bg-background"} pl-10 pr-4 py-3 text-sm text-text-neutral focus:border-primary focus:outline-none transition-all`}
+              disabled={loading}
+            />
+          </div>
+          {errors.email && <p className="mt-1 flex items-center gap-1 text-[10px] font-medium text-red-500"><MdWarning className="h-3 w-3" />{errors.email}</p>}
         </div>
+
+        {/* Password */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-text-neutral/70 mb-1.5">
             Password
           </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className="w-full rounded-xl border border-bg-secondary bg-background px-4 py-3 text-sm text-text-neutral focus:border-primary focus:outline-none transition-all"
-            required
-            disabled={loading}
-          />
+          <div className="relative">
+            <HiOutlineLockClosed className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-neutral/40" />
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setErrors(p => ({ ...p, password: undefined })); }}
+              placeholder="••••••••"
+              className={`w-full rounded-xl border ${errors.password ? "border-red-400 bg-red-50/30" : "border-bg-secondary bg-background"} pl-10 pr-12 py-3 text-sm text-text-neutral focus:border-primary focus:outline-none transition-all`}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(prev => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-neutral/40 hover:text-primary transition-colors"
+              tabIndex={-1}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <AiOutlineEyeInvisible className="h-5 w-5" /> : <AiOutlineEye className="h-5 w-5" />}
+            </button>
+          </div>
+          {errors.password && <p className="mt-1 flex items-center gap-1 text-[10px] font-medium text-red-500"><MdWarning className="h-3 w-3" />{errors.password}</p>}
         </div>
 
         <button
@@ -134,12 +150,9 @@ function LoginForm() {
         </button>
       </form>
 
-      {/* Social Provider */}
-      <div className="relative my-6 flex items-center justify-center">
+      <div className="relative my-4 flex items-center justify-center">
         <div className="absolute inset-0 w-full border-t border-bg-secondary"></div>
-        <span className="relative bg-background px-4 text-xs font-semibold uppercase tracking-wider text-text-neutral/40">
-          Or Continue With
-        </span>
+        <span className="relative bg-background px-4 text-xs font-semibold uppercase tracking-wider text-text-neutral/40">Or Continue With</span>
       </div>
 
       <button
@@ -147,58 +160,26 @@ function LoginForm() {
         className="w-full flex items-center justify-center gap-2 rounded-xl border border-bg-secondary bg-background py-3 text-sm font-semibold text-text-neutral hover:bg-bg-secondary transition-all disabled:opacity-50"
         disabled={loading}
       >
-        <svg className="h-5 w-5" viewBox="0 0 24 24">
-          <path
-            fill="currentColor"
-            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-          />
-          <path
-            fill="currentColor"
-            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-          />
-          <path
-            fill="currentColor"
-            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-          />
-          <path
-            fill="currentColor"
-            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-          />
-        </svg>
+        <FcGoogle className="h-5 w-5" />
         Sign In with Google
       </button>
 
-      {/* Demo Credentials Section */}
+      {/* Demo Access */}
       <div className="rounded-xl bg-bg-secondary/50 border border-bg-secondary p-4 space-y-3">
-        <div className="text-xs font-semibold text-text-neutral/70 uppercase tracking-wider text-center">
-          ⚡ Demo Access Accounts
+        <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-text-neutral/70 uppercase tracking-wider">
+          <RiFlashlightFill className="h-3.5 w-3.5 text-accent" />
+          Demo Access Accounts
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => handleDemoLogin("user")}
-            className="rounded-lg bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-all duration-300"
-            disabled={loading}
-          >
-            Demo User
-          </button>
-          <button
-            onClick={() => handleDemoLogin("admin")}
-            className="rounded-lg bg-accent/10 px-3 py-2 text-xs font-semibold text-accent hover:bg-accent hover:text-white transition-all duration-300"
-            disabled={loading}
-          >
-            Demo Admin
-          </button>
+          <button onClick={() => handleDemoLogin("user")} className="rounded-lg bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-all duration-300" disabled={loading}>Demo User</button>
+          <button onClick={() => handleDemoLogin("admin")} className="rounded-lg bg-accent/10 px-3 py-2 text-xs font-semibold text-accent hover:bg-accent hover:text-white transition-all duration-300" disabled={loading}>Demo Admin</button>
         </div>
-        <p className="text-[10px] text-text-neutral/50 text-center">
-          Clicks will auto-fill credentials and submit login.
-        </p>
+        <p className="text-[10px] text-text-neutral/50 text-center">Clicks will auto-fill credentials and submit login.</p>
       </div>
 
       <p className="text-center text-xs text-text-neutral/60">
         Don&apos;t have an account?{" "}
-        <Link href="/register" className="font-semibold text-primary hover:underline">
-          Register Here
-        </Link>
+        <Link href="/register" className="font-semibold text-primary hover:underline">Register Here</Link>
       </p>
     </div>
   );
@@ -210,7 +191,6 @@ export default function LoginPage() {
       <Suspense fallback={
         <div className="w-full max-w-md animate-pulse border border-bg-secondary rounded-2xl p-8 bg-background space-y-6">
           <div className="h-6 w-1/3 mx-auto rounded bg-bg-secondary"></div>
-          <div className="h-4 w-1/2 mx-auto rounded bg-bg-secondary"></div>
           <div className="h-10 w-full rounded bg-bg-secondary"></div>
           <div className="h-10 w-full rounded bg-bg-secondary"></div>
           <div className="h-12 w-full rounded bg-bg-secondary"></div>
