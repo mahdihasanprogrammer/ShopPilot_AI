@@ -2,9 +2,6 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient, Db, ObjectId } from "mongodb";
-import { betterAuth } from "better-auth";
-import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 
 // Load environment variables
 dotenv.config();
@@ -34,79 +31,15 @@ async function getDatabase(): Promise<Db> {
 client.connect()
   .then(() => {
     console.log(`Connected to MongoDB: ${DATABASE_NAME}`);
-    seedDemoUsers();
   })
   .catch((err) => console.error("MongoDB connection failed:", err));
 
-// ---- Better Auth Configuration ----
+// ---- Auth Note ----
+// Better Auth is configured inside the Next.js client app (src/lib/auth.ts).
+// This Express server validates sessions by calling the Next.js auth endpoint.
+// Demo accounts are seeded via POST /api/seed in the Next.js app.
 
-export const auth = betterAuth({
-  database: mongodbAdapter(db, {
-    client,
-  }),
-  emailAndPassword: {
-    enabled: true,
-  },
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    },
-  },
-  user: {
-    additionalFields: {
-      role: {
-        type: "string",
-        required: false,
-        defaultValue: "user",
-        input: false, // Prevents users from manually overriding role during registration/update
-      },
-    },
-  },
-  secret: process.env.BETTER_AUTH_SECRET!,
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
-});
-
-async function seedDemoUsers() {
-  try {
-    const database = await getDatabase();
-    
-    const existingUser = await database.collection("user").findOne({ email: "user@shoppilot.com" });
-    if (!existingUser) {
-      await auth.api.signUpEmail({
-        body: {
-          name: "Demo User",
-          email: "user@shoppilot.com",
-          password: "Password123!",
-        }
-      });
-      console.log("Demo user seeded successfully.");
-    }
-    
-    const existingAdmin = await database.collection("user").findOne({ email: "admin@shoppilot.com" });
-    if (!existingAdmin) {
-      await auth.api.signUpEmail({
-        body: {
-          name: "Demo Admin",
-          email: "admin@shoppilot.com",
-          password: "Password123!",
-        }
-      });
-      await database.collection("user").updateOne(
-        { email: "admin@shoppilot.com" },
-        { $set: { role: "admin" } }
-      );
-      console.log("Demo admin seeded successfully.");
-    }
-  } catch (err: any) {
-    console.error("Seeding demo users failed:", err.message);
-  }
-}
-
-// Better Auth Mount - MUST run before body-parsing middlewares like express.json()
-app.all("/api/auth/*", toNodeHandler(auth));
-
-// Apply express.json() for other API routes
+// Apply express.json() for all API routes
 app.use(express.json());
 
 // ---- TypeScript Interfaces ----
@@ -209,56 +142,28 @@ function sendResponse(
 }
 
 // ---- Authentication Middlewares ----
+// Sessions are validated by calling the Next.js Better Auth endpoint.
+// BETTER_AUTH_URL must point to the Next.js app (e.g. http://localhost:3000).
 
 async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    // 1. Verify session using Better Auth session tokens/cookies
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
+    const nextjsAuthUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
+
+    // Call the Next.js Better Auth get-session endpoint, forwarding cookies
+    const sessionRes = await fetch(`${nextjsAuthUrl}/api/auth/get-session`, {
+      headers: {
+        cookie: req.headers.cookie || "",
+        "x-forwarded-for": req.ip || "",
+      },
     });
 
-    if (!session || !session.user) {
-      // 2. Mock token overrides for early development/testing
-      let token = "";
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1];
-      }
-      if (!token && req.headers.cookie) {
-        const cookies = req.headers.cookie.split(";").reduce((acc, cookie) => {
-          const [key, val] = cookie.trim().split("=");
-          acc[key] = val;
-          return acc;
-        }, {} as Record<string, string>);
-        token = cookies["better-auth.session_token"] || cookies["better-auth.session-token"];
-      }
+    const session = await sessionRes.json();
 
-      if (token === "demo-admin-token") {
-        req.user = {
-          id: "demo-admin-id",
-          name: "Demo Admin",
-          email: "admin@shoppilot.com",
-          role: "admin",
-          createdAt: new Date(),
-        };
-        return next();
-      }
-
-      if (token === "demo-user-token") {
-        req.user = {
-          id: "demo-user-id",
-          name: "Demo User",
-          email: "user@shoppilot.com",
-          role: "user",
-          createdAt: new Date(),
-        };
-        return next();
-      }
-
-      return sendResponse(res, 401, false, "Unauthorized. Session is invalid or expired.");
+    if (!session?.user) {
+      return sendResponse(res, 401, false, "Unauthorized. Please sign in.");
     }
 
-    // Attach user information to request
+    // Attach user to request
     req.user = {
       id: session.user.id,
       name: session.user.name,

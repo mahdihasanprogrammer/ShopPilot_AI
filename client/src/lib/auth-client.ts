@@ -1,15 +1,13 @@
 import { createAuthClient } from "better-auth/react";
 import { inferAdditionalFields } from "better-auth/client/plugins";
+import type { auth } from "./auth";
 
+// Official Better Auth client — points to Next.js app where auth is mounted
+// baseURL is the Next.js app URL (http://localhost:3000), not Express
 export const authClient = createAuthClient({
-  // Must point to the Express backend where Better Auth is mounted
-  baseURL: process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:5000",
+  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   plugins: [
-    inferAdditionalFields({
-      user: {
-        role: { type: "string", required: false },
-      },
-    }),
+    inferAdditionalFields<typeof auth>(),
   ],
 });
 
