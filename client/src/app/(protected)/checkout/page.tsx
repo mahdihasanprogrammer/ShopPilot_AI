@@ -13,6 +13,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { api } from "@/lib/api";
 import { getCart, clearCart, getCartTotal, CartItem } from "@/lib/cart";
+import { toast } from "sonner";
 import {
   FiArrowLeft,
   FiShoppingBag,
@@ -262,7 +263,7 @@ function CheckoutForm({
         return;
       }
 
-      clearCart();
+      clearCart(session?.user?.id);
       setStep("success");
       onSuccess(orderRes.data._id || orderRes.data.id || "");
     } catch (err: any) {
@@ -472,13 +473,24 @@ export default function CheckoutPage() {
   const [succeeded, setSucceeded] = useState(false);
   const useSimulated = !stripePublishableKey;
 
-  // Load cart
+  const userId = session?.user?.id;
+  const isAdmin = session?.user?.role === "admin";
+
+  // Block admin from accessing checkout page
   useEffect(() => {
-    setCart(getCart());
-    const sync = () => setCart(getCart());
+    if (session && isAdmin) {
+      toast.error("Admins cannot place orders.");
+      router.push("/dashboard/admin");
+    }
+  }, [session, isAdmin, router]);
+
+  // Load cart with user-scoped isolation
+  useEffect(() => {
+    setCart(getCart(userId));
+    const sync = () => setCart(getCart(userId));
     window.addEventListener("cart-updated", sync);
     return () => window.removeEventListener("cart-updated", sync);
-  }, []);
+  }, [userId]);
 
   const handleSuccess = useCallback((id: string) => {
     setOrderId(id);

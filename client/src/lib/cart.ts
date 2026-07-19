@@ -1,4 +1,4 @@
-// ---- Cart Utility (localStorage-backed) ----
+// ---- Cart Utility (localStorage-backed, isolated per user) ----
 
 export interface CartItem {
   productId: string;
@@ -8,51 +8,58 @@ export interface CartItem {
   qty: number;
 }
 
-const CART_KEY = "shoppilot_cart";
+const getCartKey = (userId?: string) => {
+  return userId ? `shoppilot_cart_${userId}` : "shoppilot_cart_guest";
+};
 
-export function getCart(): CartItem[] {
+export function getCart(userId?: string): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(CART_KEY);
+    const key = getCartKey(userId);
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-export function addToCart(item: Omit<CartItem, "qty"> & { qty?: number }): void {
+export function addToCart(userId: string | undefined, item: Omit<CartItem, "qty"> & { qty?: number }): void {
   if (typeof window === "undefined") return;
-  const cart = getCart();
+  const cart = getCart(userId);
   const existing = cart.findIndex((c) => c.productId === item.productId);
   if (existing >= 0) {
     cart[existing].qty += item.qty ?? 1;
   } else {
     cart.push({ ...item, qty: item.qty ?? 1 });
   }
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  const key = getCartKey(userId);
+  localStorage.setItem(key, JSON.stringify(cart));
   window.dispatchEvent(new Event("cart-updated"));
 }
 
-export function removeFromCart(productId: string): void {
+export function removeFromCart(userId: string | undefined, productId: string): void {
   if (typeof window === "undefined") return;
-  const cart = getCart().filter((c) => c.productId !== productId);
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  const cart = getCart(userId).filter((c) => c.productId !== productId);
+  const key = getCartKey(userId);
+  localStorage.setItem(key, JSON.stringify(cart));
   window.dispatchEvent(new Event("cart-updated"));
 }
 
-export function updateQty(productId: string, qty: number): void {
+export function updateQty(userId: string | undefined, productId: string, qty: number): void {
   if (typeof window === "undefined") return;
-  if (qty <= 0) { removeFromCart(productId); return; }
-  const cart = getCart().map((c) =>
+  if (qty <= 0) { removeFromCart(userId, productId); return; }
+  const cart = getCart(userId).map((c) =>
     c.productId === productId ? { ...c, qty } : c
   );
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  const key = getCartKey(userId);
+  localStorage.setItem(key, JSON.stringify(cart));
   window.dispatchEvent(new Event("cart-updated"));
 }
 
-export function clearCart(): void {
+export function clearCart(userId?: string): void {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(CART_KEY);
+  const key = getCartKey(userId);
+  localStorage.removeItem(key);
   window.dispatchEvent(new Event("cart-updated"));
 }
 

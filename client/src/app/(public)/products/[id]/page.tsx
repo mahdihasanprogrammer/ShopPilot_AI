@@ -13,6 +13,8 @@ import RelatedProducts from "@/components/products/details/RelatedProducts";
 import AISummaryCard from "@/components/products/details/AISummaryCard";
 import SkeletonLoader from "@/components/shared/SkeletonLoader";
 import { RiArrowLeftLine, RiShoppingCartLine, RiWallet2Line, RiStarFill, RiChat3Line, RiErrorWarningLine, RiCheckLine } from "react-icons/ri";
+import { useSession } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 export default function ProductDetailsPage({
   params,
@@ -21,6 +23,10 @@ export default function ProductDetailsPage({
 }) {
   const { id } = React.use(params);
   const router = useRouter();
+  const { data: session } = useSession();
+  const user = session?.user;
+  const isAdmin = user?.role === "admin";
+  const userId = user?.id;
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,25 +61,33 @@ export default function ProductDetailsPage({
 
   const handleAddToCart = () => {
     if (!product) return;
-    addToCart({
+    if (isAdmin) {
+      toast.error("Admins cannot place orders.");
+      return;
+    }
+    addToCart(userId, {
       productId: product.id || String((product as any)._id),
       title: product.title,
       price: product.price,
       image: product.images?.[0],
     });
+    toast.success(`"${product.title}" added to cart!`);
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
   };
 
   const handleBuyNow = () => {
-    if (product) {
-      addToCart({
-        productId: product.id || String((product as any)._id),
-        title: product.title,
-        price: product.price,
-        image: product.images?.[0],
-      });
+    if (!product) return;
+    if (isAdmin) {
+      toast.error("Admins cannot place orders.");
+      return;
     }
+    addToCart(userId, {
+      productId: product.id || String((product as any)._id),
+      title: product.title,
+      price: product.price,
+      image: product.images?.[0],
+    });
     router.push("/checkout");
   };
 

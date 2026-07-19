@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import ConditionalShell from "@/components/shared/ConditionalShell";
 import ChatWidget from "@/components/shared/ChatWidget";
+import { Toaster } from "sonner";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function RootLayout({
           {children}
         </ConditionalShell>
         <ChatWidget />
+        <Toaster richColors position="top-right" closeButton />
       </body>
     </html>
   );

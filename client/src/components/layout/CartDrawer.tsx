@@ -25,12 +25,13 @@ export default function CartDrawer() {
   const { data: session, isPending } = useSession();
   const user = session?.user;
   const isAdmin = user?.role === "admin";
+  const userId = user?.id;
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  const syncCart = useCallback(() => setCart(getCart()), []);
+  const syncCart = useCallback(() => setCart(getCart(userId)), [userId]);
 
   useEffect(() => {
     setMounted(true);
@@ -39,15 +40,27 @@ export default function CartDrawer() {
     return () => window.removeEventListener("cart-updated", syncCart);
   }, [syncCart]);
 
-  // Don't render until client-side hydration is complete
+  // Lock body scrolling when the drawer is open to prevent page layout double scrollbars
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  // Don't render until client-side hydration is complete to avoid SSR mismatches
   if (!mounted || isPending) {
     return (
       <div className="h-9 w-9 rounded-xl border border-black/[0.06] bg-white/40 animate-pulse" />
     );
   }
 
-  // Don't show cart icon for admins
-  if (isAdmin) return null;
+  // Cart icon is ONLY shown to logged-in non-admin users (hidden for guests, hidden for admins)
+  if (!user || isAdmin) return null;
 
   const count = getCartCount(cart);
   const total = getCartTotal(cart);
@@ -69,22 +82,22 @@ export default function CartDrawer() {
         )}
       </button>
 
-      {/* Backdrop */}
+      {/* Backdrop overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-xs"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-xs transition-opacity duration-300"
           onClick={() => setOpen(false)}
         />
       )}
 
-      {/* Drawer */}
+      {/* Drawer Panel */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-full max-w-sm flex flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 z-50 h-screen w-full max-w-sm flex flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-black/[0.05] px-5 py-4 bg-white">
+        <div className="flex items-center justify-between border-b border-black/[0.05] px-5 py-4 bg-white shrink-0">
           <div className="flex items-center gap-2">
             <FiShoppingBag className="h-4.5 w-4.5 text-primary" />
             <h2 className="text-sm font-extrabold text-text-neutral">
@@ -104,7 +117,7 @@ export default function CartDrawer() {
           </button>
         </div>
 
-        {/* Items */}
+        {/* Scrollable list items */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-background">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-16">
@@ -159,7 +172,7 @@ export default function CartDrawer() {
                   {/* Qty controls + delete */}
                   <div className="flex items-center gap-1.5 mt-2">
                     <button
-                      onClick={() => updateQty(item.productId, item.qty - 1)}
+                      onClick={() => updateQty(userId, item.productId, item.qty - 1)}
                       className="h-6 w-6 rounded-lg border border-black/[0.07] flex items-center justify-center text-text-neutral/60 hover:text-primary hover:border-primary/30 transition-all bg-white"
                     >
                       <FiMinus className="h-3 w-3" />
@@ -168,13 +181,13 @@ export default function CartDrawer() {
                       {item.qty}
                     </span>
                     <button
-                      onClick={() => updateQty(item.productId, item.qty + 1)}
+                      onClick={() => updateQty(userId, item.productId, item.qty + 1)}
                       className="h-6 w-6 rounded-lg border border-black/[0.07] flex items-center justify-center text-text-neutral/60 hover:text-primary hover:border-primary/30 transition-all bg-white"
                     >
                       <FiPlus className="h-3 w-3" />
                     </button>
                     <button
-                      onClick={() => removeFromCart(item.productId)}
+                      onClick={() => removeFromCart(userId, item.productId)}
                       className="ml-auto h-6 w-6 rounded-lg flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
                     >
                       <FiTrash2 className="h-3 w-3" />
@@ -188,7 +201,7 @@ export default function CartDrawer() {
 
         {/* Footer */}
         {cart.length > 0 && (
-          <div className="border-t border-black/[0.05] bg-white px-5 py-4 space-y-3">
+          <div className="border-t border-black/[0.05] bg-white px-5 py-4 space-y-3 shrink-0">
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-text-neutral/40">Total</p>

@@ -9,6 +9,7 @@ import { HiOutlinePhotograph } from "react-icons/hi";
 import { BsCartPlus } from "react-icons/bs";
 import { MdStar } from "react-icons/md";
 import { FiEye, FiCheck } from "react-icons/fi";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   product: Product;
@@ -16,7 +17,9 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "admin";
+  const user = session?.user;
+  const isAdmin = user?.role === "admin";
+  const userId = user?.id;
 
   const [added, setAdded] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -26,12 +29,21 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart({
+    
+    // Block admin and show sonner toast
+    if (isAdmin) {
+      toast.error("Admins cannot place orders.");
+      return;
+    }
+
+    addToCart(userId, {
       productId: product.id || String((product as any)._id),
       title: product.title,
       price: product.price,
       image: product.images?.[0],
     });
+    
+    toast.success(`"${product.title}" added to cart!`);
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
   };
@@ -97,9 +109,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             <FiEye className="h-4 w-4" />
           </Link>
 
-          {/* Add to Cart — hidden for admins, shown as button for users */}
-          {/* Only show after mount to avoid hydration mismatch */}
-          {mounted && !isAdmin && (
+          {/* Add to Cart — blocks admins with toast error, works for users */}
+          {mounted && (
             <button
               onClick={handleAddToCart}
               title={added ? "Added!" : "Add to Cart"}
