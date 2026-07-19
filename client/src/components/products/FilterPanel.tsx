@@ -1,6 +1,7 @@
 "use client";
 
 import { FiFilter, FiRefreshCw } from "react-icons/fi";
+import { CATEGORIES } from "@/lib/categories";
 
 interface FilterPanelProps {
   category: string;
@@ -9,16 +10,6 @@ interface FilterPanelProps {
   onFilterChange: (filters: { category?: string; minPrice?: string; maxPrice?: string }) => void;
   onClear: () => void;
 }
-
-const CATEGORIES = [
-  { label: "All Categories", value: "" },
-  { label: "Electronics", value: "electronics" },
-  { label: "Fashion", value: "fashion" },
-  { label: "Home Decor", value: "home-decor" },
-  { label: "Fitness", value: "fitness" },
-  { label: "Books", value: "books" },
-  { label: "Beauty & Health", value: "beauty" },
-];
 
 export default function FilterPanel({
   category,
@@ -53,9 +44,10 @@ export default function FilterPanel({
           onChange={(e) => onFilterChange({ category: e.target.value })}
           className="w-full rounded-xl border border-bg-secondary bg-background px-3 py-2 text-xs text-text-neutral focus:border-primary focus:outline-none transition-all"
         >
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
+          <option value="">All Categories</option>
+          {CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
             </option>
           ))}
         </select>

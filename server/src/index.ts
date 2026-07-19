@@ -264,7 +264,7 @@ app.get("/api/products", async (req: Request, res: Response) => {
 
     // Build query conditions
     const query: any = {};
-    if (category) query.category = category;
+    if (category) query.category = { $regex: `^${category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" };
     if (!isNaN(minPrice) || !isNaN(maxPrice)) {
       query.price = {};
       if (!isNaN(minPrice)) query.price.$gte = minPrice;

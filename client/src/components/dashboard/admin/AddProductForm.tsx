@@ -15,20 +15,7 @@ import {
   FiAlertCircle,
   FiLoader,
 } from "react-icons/fi";
-
-// ---- Category options (matches server-side seed categories) ----
-const CATEGORIES = [
-  "Electronics",
-  "Clothing",
-  "Books",
-  "Home & Garden",
-  "Sports",
-  "Beauty",
-  "Toys",
-  "Automotive",
-  "Food & Grocery",
-  "Health",
-];
+import { CATEGORIES } from "@/lib/categories";
 
 interface FormField {
   label: string;
