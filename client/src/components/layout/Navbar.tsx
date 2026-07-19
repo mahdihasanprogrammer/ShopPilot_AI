@@ -21,6 +21,7 @@ import {
   FiMenu,
   FiX,
 } from "react-icons/fi";
+import CartDrawer from "./CartDrawer";
 
 export default function Navbar() {
   const { data: sessionData, isPending: loading } = useSession();
@@ -88,13 +89,6 @@ export default function Navbar() {
                   <HiOutlineViewGrid className="h-4 w-4" />
                   Dashboard
                 </Link>
-                <Link
-                  href="/checkout"
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-text-neutral/70 hover:text-primary hover:bg-bg-secondary transition-all"
-                >
-                  <HiOutlineShoppingCart className="h-4 w-4" />
-                  Checkout
-                </Link>
               </>
             )}
           </nav>
@@ -102,6 +96,9 @@ export default function Navbar() {
 
         {/* Desktop Auth Controls / Mobile Hamburger trigger */}
         <div className="flex items-center gap-3">
+          {/* Cart Drawer — only shown for non-admin users */}
+          <CartDrawer />
+
           <div className="hidden md:flex items-center gap-3">
             {loading ? (
               <div className="h-8 w-24 animate-pulse rounded-lg bg-bg-secondary"></div>
