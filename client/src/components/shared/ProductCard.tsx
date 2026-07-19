@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Product } from "@/types";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { addToCart } from "@/lib/cart";
 import { HiOutlinePhotograph } from "react-icons/hi";
@@ -16,6 +17,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const router = useRouter();
   const { data: session } = useSession();
   const user = session?.user;
   const isAdmin = user?.role === "admin";
@@ -30,7 +32,14 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
     
-    // Block admin and show sonner toast
+    // Block guest users
+    if (!user) {
+      toast.error("Please log in to continue.");
+      router.push("/login");
+      return;
+    }
+
+    // Block admin users
     if (isAdmin) {
       toast.error("Admins cannot place orders.");
       return;

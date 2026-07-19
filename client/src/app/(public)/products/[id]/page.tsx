@@ -61,10 +61,20 @@ export default function ProductDetailsPage({
 
   const handleAddToCart = () => {
     if (!product) return;
+
+    // Block guest — redirect to login with callback
+    if (!user) {
+      toast.error("Please log in to continue.");
+      router.push(`/login?callbackUrl=/products/${product.id}`);
+      return;
+    }
+
+    // Block admin
     if (isAdmin) {
       toast.error("Admins cannot place orders.");
       return;
     }
+
     addToCart(userId, {
       productId: product.id || String((product as any)._id),
       title: product.title,
@@ -78,10 +88,20 @@ export default function ProductDetailsPage({
 
   const handleBuyNow = () => {
     if (!product) return;
+
+    // Block guest — redirect to login with callback
+    if (!user) {
+      toast.error("Please log in to continue.");
+      router.push(`/login?callbackUrl=/products/${product.id}`);
+      return;
+    }
+
+    // Block admin
     if (isAdmin) {
       toast.error("Admins cannot place orders.");
       return;
     }
+
     addToCart(userId, {
       productId: product.id || String((product as any)._id),
       title: product.title,
