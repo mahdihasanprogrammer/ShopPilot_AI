@@ -57,14 +57,18 @@ export default function AdminOrdersTable({ orders, onStatusUpdate }: AdminOrders
           </thead>
           <tbody>
             {orders.map((o) => {
-              const isUpdating = updatingId === o.id;
+              const orderId = o.id || (o as any)._id || "";
+              const userId = o.userId || "";
+              const formattedOrderId = orderId ? String(orderId).slice(-6).toUpperCase() : "N/A";
+              const formattedUserId = userId ? String(userId).slice(-6).toUpperCase() : "N/A";
+              const isUpdating = updatingId === orderId;
               return (
-                <tr key={o.id} className="border-b border-bg-secondary/50 last:border-b-0 hover:bg-bg-secondary/10 transition-colors">
+                <tr key={orderId} className="border-b border-bg-secondary/50 last:border-b-0 hover:bg-bg-secondary/10 transition-colors">
                   <td className="px-6 py-4 font-mono text-text-neutral font-semibold">
-                    #{o.id.slice(-6).toUpperCase()}
+                    #{formattedOrderId}
                   </td>
                   <td className="px-6 py-4 font-mono text-text-neutral/60">
-                    {o.userId.slice(-6).toUpperCase()}
+                    {formattedUserId}
                   </td>
                   <td className="px-6 py-4 text-text-neutral/70 font-medium">
                     {formatDate(o.createdAt)}
@@ -77,7 +81,7 @@ export default function AdminOrdersTable({ orders, onStatusUpdate }: AdminOrders
                     <select
                       value={o.status}
                       disabled={isUpdating}
-                      onChange={(e) => handleStatusChange(o.id, e.target.value as Order["status"])}
+                      onChange={(e) => handleStatusChange(orderId, e.target.value as Order["status"])}
                       className={`rounded-xl border border-bg-secondary bg-background px-3 py-1.5 text-xs font-bold text-text-neutral focus:border-primary focus:outline-none transition-all shadow-sm ${
                         o.status === "delivered" ? "text-purple-600 border-purple-200" :
                         o.status === "shipped" ? "text-blue-600 border-blue-200" :

@@ -56,11 +56,14 @@ export default function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => (
-              <tr key={o.id} className="border-b border-black/[0.03] last:border-b-0 hover:bg-black/[0.01] transition-colors">
-                <td className="px-6 py-4.5 font-mono text-text-neutral font-bold">
-                  #{o.id.slice(-6).toUpperCase()}
-                </td>
+            {orders.map((o) => {
+              const orderId = o.id || (o as any)._id || "";
+              const formattedId = orderId ? String(orderId).slice(-6).toUpperCase() : "N/A";
+              return (
+                <tr key={orderId} className="border-b border-black/[0.03] last:border-b-0 hover:bg-black/[0.01] transition-colors">
+                  <td className="px-6 py-4.5 font-mono text-text-neutral font-bold">
+                    #{formattedId}
+                  </td>
                 <td className="px-6 py-4.5 text-text-neutral/70 font-semibold">
                   {formatDate(o.createdAt)}
                 </td>
@@ -74,8 +77,9 @@ export default function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
                   {getStatusBadge(o.status)}
                 </td>
               </tr>
-            ))}
-          </tbody>
+            );
+          })}
+        </tbody>
         </table>
       </div>
     </div>

@@ -60,9 +60,13 @@ export default function ManageOrdersPage() {
     setUpdatingId(null);
     if (res.success) {
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+        prev.map((o) => {
+          const oid = o.id || (o as any)._id || "";
+          return oid === orderId ? { ...o, status: newStatus } : o;
+        })
       );
-      showToast("success", `Order #${orderId.slice(-6).toUpperCase()} updated to ${newStatus}.`);
+      const shortId = orderId ? orderId.slice(-6).toUpperCase() : "N/A";
+      showToast("success", `Order #${shortId} updated to ${newStatus}.`);
     } else {
       showToast("error", res.error || "Failed to update order status.");
     }
@@ -71,10 +75,12 @@ export default function ManageOrdersPage() {
   // Live filter
   const filteredOrders = orders.filter((o) => {
     const q = search.toLowerCase();
+    const oid = o.id || (o as any)._id || "";
+    const ouid = o.userId || "";
     return (
-      o.id.toLowerCase().includes(q) ||
-      o.userId.toLowerCase().includes(q) ||
-      o.items.some((item) => item.name.toLowerCase().includes(q))
+      oid.toLowerCase().includes(q) ||
+      ouid.toLowerCase().includes(q) ||
+      o.status.toLowerCase().includes(q)
     );
   });
 
@@ -248,20 +254,24 @@ export default function ManageOrdersPage() {
               </thead>
               <tbody>
                 {filteredOrders.map((o) => {
-                  const isUpdating = updatingId === o.id;
+                  const orderId = o.id || (o as any)._id || "";
+                  const userId = o.userId || "";
+                  const formattedOrderId = orderId ? String(orderId).slice(-6).toUpperCase() : "N/A";
+                  const formattedUserId = userId ? String(userId).slice(-6).toUpperCase() : "N/A";
+                  const isUpdating = updatingId === orderId;
                   return (
                     <tr
-                      key={o.id}
+                      key={orderId}
                       className="border-b border-bg-secondary/50 last:border-b-0 hover:bg-bg-secondary/10 transition-colors"
                     >
                       {/* Order ID */}
                       <td className="px-6 py-4 font-mono font-bold text-text-neutral text-xs">
-                        #{o.id.slice(-6).toUpperCase()}
+                        #{formattedOrderId}
                       </td>
 
                       {/* Customer ID */}
                       <td className="px-6 py-4 font-mono text-text-neutral/60 text-xs">
-                        {o.userId.slice(-6).toUpperCase()}
+                        {formattedUserId}
                       </td>
 
                       {/* Product Name list */}
@@ -292,7 +302,7 @@ export default function ManageOrdersPage() {
                           <select
                             value={o.status}
                             disabled={isUpdating}
-                            onChange={(e) => handleStatusChange(o.id, e.target.value as Order["status"])}
+                            onChange={(e) => handleStatusChange(orderId, e.target.value as Order["status"])}
                             className={`rounded-xl border border-bg-secondary bg-background px-3 py-1.5 text-xs font-bold text-text-neutral focus:border-primary focus:outline-none transition-all shadow-sm cursor-pointer ${
                               o.status === "delivered" ? "text-purple-600 border-purple-200 bg-purple-50/20" :
                               o.status === "shipped" ? "text-blue-600 border-blue-200 bg-blue-50/20" :
