@@ -9,6 +9,7 @@ import {
   updateQty,
   getCartTotal,
   getCartCount,
+  fetchAndSyncCart,
   CartItem,
 } from "@/lib/cart";
 import {
@@ -35,10 +36,16 @@ export default function CartDrawer() {
 
   useEffect(() => {
     setMounted(true);
-    syncCart();
+    if (userId) {
+      fetchAndSyncCart(userId).then(() => {
+        syncCart();
+      });
+    } else {
+      syncCart();
+    }
     window.addEventListener("cart-updated", syncCart);
     return () => window.removeEventListener("cart-updated", syncCart);
-  }, [syncCart]);
+  }, [userId, syncCart]);
 
   // Lock body scrolling when the drawer is open to prevent page layout double scrollbars
   useEffect(() => {

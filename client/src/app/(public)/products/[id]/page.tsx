@@ -177,8 +177,30 @@ export default function ProductDetailsPage({
               {product.title}
             </h1>
             
+            {/* Brand and Stock Availability metrics */}
+            <div className="flex flex-wrap items-center gap-4 text-xs font-semibold py-1">
+              {product.brand && (
+                <div className="flex items-center gap-1">
+                  <span className="text-text-neutral/40 uppercase tracking-wider font-bold">Brand:</span>
+                  <span className="text-text-neutral">{product.brand}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1">
+                <span className="text-text-neutral/40 uppercase tracking-wider font-bold">Availability:</span>
+                {product.stock !== undefined && product.stock > 0 ? (
+                  <span className="text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-100 rounded-full px-2.5 py-0.5 text-[10px]">
+                    In Stock ({product.stock})
+                  </span>
+                ) : (
+                  <span className="text-red-700 font-extrabold bg-red-50 border border-red-100 rounded-full px-2.5 py-0.5 text-[10px]">
+                    Out of Stock
+                  </span>
+                )}
+              </div>
+            </div>
+
             {/* Rating & Review counts */}
-            <div className="flex items-center gap-4 text-xs font-semibold">
+            <div className="flex items-center gap-4 text-xs font-semibold mt-1">
               <div className="flex items-center gap-1 text-amber-400">
                 <RiStarFill className="h-4 w-4" />
                 <span className="text-text-neutral">{product.rating?.toFixed(1) || "5.0"}</span>
@@ -207,13 +229,16 @@ export default function ProductDetailsPage({
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               onClick={handleAddToCart}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-xl border-2 px-6 py-3.5 text-sm font-bold transition-all ${
+              disabled={product.stock === 0}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl border-2 px-6 py-3.5 text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                 addedToCart
                   ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                   : "border-primary/20 hover:border-primary bg-background text-primary hover:bg-primary/5"
               }`}
             >
-              {addedToCart ? (
+              {product.stock === 0 ? (
+                "Out of Stock"
+              ) : addedToCart ? (
                 <><RiCheckLine className="h-4.5 w-4.5" />Added to Cart!</>
               ) : (
                 <><RiShoppingCartLine className="h-4.5 w-4.5" />Add to Cart</>
@@ -221,7 +246,8 @@ export default function ProductDetailsPage({
             </button>
             <button
               onClick={handleBuyNow}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-white hover:bg-primary-dark transition-all shadow-md hover:shadow-lg"
+              disabled={product.stock === 0}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-white hover:bg-primary-dark transition-all shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <RiWallet2Line className="h-4.5 w-4.5" />
               Buy Now

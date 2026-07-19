@@ -9,6 +9,7 @@ import AuthButton from "@/components/auth/AuthButton";
 import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from "react-icons/hi";
 import { MdWarning, MdCheckCircle } from "react-icons/md";
 import { LuImagePlus, LuX } from "react-icons/lu";
+import { toast } from "sonner";
 
 // ---- Validation helpers ----
 function validateEmail(email: string): string | null {
@@ -145,7 +146,10 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error("Please fill in all registration fields correctly.");
+      return;
+    }
     setLoading(true);
     setErrors({});
     try {
@@ -161,10 +165,11 @@ export default function RegisterPage() {
         image: imageUrl,
         callbackURL: "/dashboard/user",
       });
+      toast.success("Account created successfully!");
       router.push("/dashboard/user");
       router.refresh();
     } catch (err: any) {
-      setErrors({ form: err.message || "Registration failed. Please try again." });
+      toast.error(err.message || "Registration failed. Please try again.");
       setLoading(false);
     }
   };
@@ -176,13 +181,6 @@ export default function RegisterPage() {
           <h1 className="text-3xl font-bold tracking-tight text-text-neutral">Create Account</h1>
           <p className="mt-2 text-sm text-text-neutral/60">Sign up to start shopping with ShopPilot AI</p>
         </div>
-
-        {errors.form && (
-          <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-xs font-semibold text-red-600 border border-red-100">
-            <MdWarning className="h-4 w-4 shrink-0" />
-            {errors.form}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {/* Avatar Upload */}

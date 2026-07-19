@@ -18,6 +18,7 @@ import {
   FiTrendingUp,
   FiTruck,
 } from "react-icons/fi";
+import { toast } from "sonner";
 import { RiLoader4Line } from "react-icons/ri";
 
 export default function ManageOrdersPage() {
@@ -29,12 +30,6 @@ export default function ManageOrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  const showToast = (type: "success" | "error", message: string) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3500);
-  };
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -66,9 +61,9 @@ export default function ManageOrdersPage() {
         })
       );
       const shortId = orderId ? orderId.slice(-6).toUpperCase() : "N/A";
-      showToast("success", `Order #${shortId} updated to ${newStatus}.`);
+      toast.success(`Order #${shortId} updated to ${newStatus}.`);
     } else {
-      showToast("error", res.error || "Failed to update order status.");
+      toast.error(res.error || "Failed to update order status.");
     }
   };
 
@@ -104,25 +99,6 @@ export default function ManageOrdersPage() {
 
   return (
     <main className="flex-1 px-6 py-12 sm:px-8 lg:px-12 max-w-7xl mx-auto w-full space-y-8">
-      {/* Toast Notification */}
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-5 py-3.5 text-sm font-semibold shadow-xl animate-fadeIn ${
-            toast.type === "success"
-              ? "border-green-200 bg-green-50 text-green-700"
-              : "border-red-200 bg-red-50 text-red-700"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <FiCheckCircle className="h-4 w-4 shrink-0" />
-          ) : (
-            <FiAlertTriangle className="h-4 w-4 shrink-0" />
-          )}
-          {toast.message}
-        </div>
-      )}
 
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs font-semibold text-text-neutral/50" aria-label="Breadcrumb">

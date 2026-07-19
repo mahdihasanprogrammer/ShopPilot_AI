@@ -23,6 +23,8 @@ export interface Product {
   price: number;
   category: string;
   images: string[];
+  brand?: string;
+  stock?: number;
   ownerId?: string;
   rating?: number;
   reviews?: Review[];

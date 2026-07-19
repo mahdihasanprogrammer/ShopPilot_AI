@@ -105,9 +105,17 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Action row: Price | Details icon | Add to Cart */}
         <div className="mt-3.5 flex items-center gap-2">
-          <span className="flex-1 text-base font-extrabold text-text-neutral">
-            ${product.price.toFixed(2)}
-          </span>
+          <div className="flex-1 min-w-0">
+            <span className="text-base font-extrabold text-text-neutral">
+              ${product.price.toFixed(2)}
+            </span>
+            {/* Out of stock indicator */}
+            {product.stock === 0 && (
+              <span className="ml-2 text-[9px] font-bold uppercase tracking-wider text-red-500 bg-red-50 border border-red-100 rounded-full px-2 py-0.5">
+                Out of Stock
+              </span>
+            )}
+          </div>
 
           {/* Details icon button — always visible */}
           <Link
@@ -122,14 +130,19 @@ export default function ProductCard({ product }: ProductCardProps) {
           {mounted && (
             <button
               onClick={handleAddToCart}
-              title={added ? "Added!" : "Add to Cart"}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-200 shrink-0 ${
-                added
+              disabled={product.stock === 0}
+              title={product.stock === 0 ? "Out of Stock" : added ? "Added!" : "Add to Cart"}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+                product.stock === 0
+                  ? "bg-gray-100 text-gray-400 border border-gray-200"
+                  : added
                   ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                   : "bg-primary/[0.07] text-primary hover:bg-primary hover:text-white"
               }`}
             >
-              {added ? (
+              {product.stock === 0 ? (
+                "N/A"
+              ) : added ? (
                 <><FiCheck className="h-3.5 w-3.5" />Added</>
               ) : (
                 <><BsCartPlus className="h-3.5 w-3.5" />Add</>

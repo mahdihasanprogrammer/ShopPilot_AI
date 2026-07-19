@@ -1,4 +1,5 @@
-// ---- Cart Utility (localStorage-backed, isolated per user) ----
+// ---- Cart Utility (Database-backed & isolated per user) ----
+import { api } from "@/lib/api";
 
 export interface CartItem {
   productId: string;
@@ -12,6 +13,7 @@ const getCartKey = (userId?: string) => {
   return userId ? `shoppilot_cart_${userId}` : "shoppilot_cart_guest";
 };
 
+// Retrieve cart from localStorage (synchronous fallback/cache)
 export function getCart(userId?: string): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
@@ -21,6 +23,33 @@ export function getCart(userId?: string): CartItem[] {
   } catch {
     return [];
   }
+}
+
+// Persist cart to DB if logged in, and localStorage
+async function syncCartToDb(userId: string | undefined, items: CartItem[]): Promise<void> {
+  if (typeof window === "undefined" || !userId) return;
+  try {
+    await api.post("/cart", { items });
+  } catch (err) {
+    console.error("Failed to sync cart to database:", err);
+  }
+}
+
+// Fetch cart from DB and populate localStorage (called on mount/login)
+export async function fetchAndSyncCart(userId: string | undefined): Promise<CartItem[]> {
+  if (typeof window === "undefined" || !userId) return [];
+  try {
+    const res = await api.get<{ items: CartItem[] }>("/cart");
+    if (res.success && res.data?.items) {
+      const key = getCartKey(userId);
+      localStorage.setItem(key, JSON.stringify(res.data.items));
+      window.dispatchEvent(new Event("cart-updated"));
+      return res.data.items;
+    }
+  } catch (err) {
+    console.error("Failed to fetch cart from database:", err);
+  }
+  return getCart(userId);
 }
 
 export function addToCart(userId: string | undefined, item: Omit<CartItem, "qty"> & { qty?: number }): void {
@@ -35,6 +64,11 @@ export function addToCart(userId: string | undefined, item: Omit<CartItem, "qty"
   const key = getCartKey(userId);
   localStorage.setItem(key, JSON.stringify(cart));
   window.dispatchEvent(new Event("cart-updated"));
+
+  // Sync to database
+  if (userId) {
+    syncCartToDb(userId, cart);
+  }
 }
 
 export function removeFromCart(userId: string | undefined, productId: string): void {
@@ -43,6 +77,11 @@ export function removeFromCart(userId: string | undefined, productId: string): v
   const key = getCartKey(userId);
   localStorage.setItem(key, JSON.stringify(cart));
   window.dispatchEvent(new Event("cart-updated"));
+
+  // Sync to database
+  if (userId) {
+    syncCartToDb(userId, cart);
+  }
 }
 
 export function updateQty(userId: string | undefined, productId: string, qty: number): void {
@@ -54,6 +93,11 @@ export function updateQty(userId: string | undefined, productId: string, qty: nu
   const key = getCartKey(userId);
   localStorage.setItem(key, JSON.stringify(cart));
   window.dispatchEvent(new Event("cart-updated"));
+
+  // Sync to database
+  if (userId) {
+    syncCartToDb(userId, cart);
+  }
 }
 
 export function clearCart(userId?: string): void {
@@ -61,6 +105,11 @@ export function clearCart(userId?: string): void {
   const key = getCartKey(userId);
   localStorage.removeItem(key);
   window.dispatchEvent(new Event("cart-updated"));
+
+  // Sync to database
+  if (userId) {
+    syncCartToDb(userId, []);
+  }
 }
 
 export function getCartTotal(cart: CartItem[]): number {

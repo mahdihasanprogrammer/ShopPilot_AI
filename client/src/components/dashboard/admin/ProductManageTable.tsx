@@ -20,6 +20,7 @@ import {
   FiCheckCircle,
   FiFilter,
 } from "react-icons/fi";
+import { toast } from "sonner";
 
 // ---- Helpers ----
 
@@ -210,14 +211,6 @@ export default function ProductManageTable({ isAdmin, userId }: ProductManageTab
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Toast
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  const showToast = (type: "success" | "error", message: string) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3500);
-  };
-
   // ---- Fetch products ----
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -278,9 +271,9 @@ export default function ProductManageTable({ isAdmin, userId }: ProductManageTab
 
     if (res.success) {
       setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
-      showToast("success", `"${deleteTarget.title}" deleted successfully.`);
+      toast.success(`"${deleteTarget.title}" deleted successfully.`);
     } else {
-      showToast("error", res.error || "Failed to delete product.");
+      toast.error(res.error || "Failed to delete product.");
     }
   };
 
@@ -295,26 +288,6 @@ export default function ProductManageTable({ isAdmin, userId }: ProductManageTab
           onCancel={() => !isDeleting && setDeleteTarget(null)}
           isDeleting={isDeleting}
         />
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className={`fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-2xl border px-5 py-3.5 text-sm font-semibold shadow-xl animate-fadeIn ${
-            toast.type === "success"
-              ? "border-green-200 bg-green-50 text-green-700"
-              : "border-red-200 bg-red-50 text-red-700"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <FiCheckCircle className="h-4 w-4 shrink-0" />
-          ) : (
-            <FiAlertTriangle className="h-4 w-4 shrink-0" />
-          )}
-          {toast.message}
-        </div>
       )}
 
       {/* Toolbar: search + refresh */}

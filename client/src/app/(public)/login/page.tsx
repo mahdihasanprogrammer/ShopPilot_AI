@@ -9,7 +9,7 @@ import AuthButton from "@/components/auth/AuthButton";
 import GoogleButton from "@/components/auth/GoogleButton";
 import DemoLoginButton from "@/components/auth/DemoLoginButton";
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
-import { MdWarning } from "react-icons/md";
+import { toast } from "sonner";
 
 // ---- Validation helper ----
 function validateEmail(email: string): string | null {
@@ -26,7 +26,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
@@ -39,15 +39,19 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error("Please enter email and password correctly.");
+      return;
+    }
     setLoading(true);
     setErrors({});
     try {
       await signIn.email({ email, password, callbackURL: callbackUrl });
+      toast.success("Welcome back!");
       router.push(callbackUrl);
       router.refresh();
     } catch (err: any) {
-      setErrors({ form: err.message || "Invalid email or password. Please try again." });
+      toast.error(err.message || "Invalid email or password. Please try again.");
       setLoading(false);
     }
   };
@@ -57,7 +61,7 @@ function LoginForm() {
     try {
       await signIn.social({ provider: "google", callbackURL: callbackUrl });
     } catch (err: any) {
-      setErrors({ form: err.message || "Google authentication failed." });
+      toast.error(err.message || "Google authentication failed.");
       setLoading(false);
     }
   };
@@ -72,10 +76,11 @@ function LoginForm() {
     setErrors({});
     try {
       await signIn.email({ email: demoEmail, password: demoPassword });
+      toast.success(`Logged in as Demo ${role}`);
       router.push(callbackUrl);
       router.refresh();
     } catch (err: any) {
-      setErrors({ form: err.message || `Demo ${role} login failed.` });
+      toast.error(err.message || `Demo ${role} login failed.`);
       setLoading(false);
     }
   };
@@ -86,13 +91,6 @@ function LoginForm() {
         <h1 className="text-3xl font-bold tracking-tight text-text-neutral">Welcome Back</h1>
         <p className="mt-2 text-sm text-text-neutral/60">Sign in to your ShopPilot account</p>
       </div>
-
-      {errors.form && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-xs font-semibold text-red-600 border border-red-100">
-          <MdWarning className="h-4 w-4 shrink-0" />
-          {errors.form}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {/* Email */}
@@ -142,7 +140,7 @@ function LoginForm() {
 
       <p className="text-center text-xs text-text-neutral/60">
         Don&apos;t have an account?{" "}
-        <Link href="/register" className="font-semibold text-primary hover:underline">
+        <Link href="/register" className="font-semibold text-primary hover:underline cursor-pointer">
           Register Here
         </Link>
       </p>

@@ -318,21 +318,38 @@ app.get("/api/products/:id", async (req: Request, res: Response) => {
   }
 });
 
+// Helper to decrement stock counts for ordered items
+async function decrementProductStock(items: any[]) {
+  try {
+    const database = await getDatabase();
+    for (const item of items) {
+      const productId = item.productId;
+      const qty = parseInt(item.qty) || 1;
+      const query = ObjectId.isValid(productId) ? { _id: new ObjectId(productId) } : { id: productId };
+      await database.collection("products").updateOne(query, { $inc: { stock: -qty } });
+    }
+  } catch (err: any) {
+    console.error("Failed to decrement product stock:", err.message);
+  }
+}
+
 app.post("/api/products", requireAdmin, async (req: Request, res: Response) => {
   try {
     const database = await getDatabase();
-    const { title, shortDescription, fullDescription, price, category, images } = req.body;
+    const { title, shortDescription, fullDescription, price, category, images, brand = "", stock = 10 } = req.body;
 
     if (!title || !price || !category) {
       return sendResponse(res, 400, false, "Title, price, and category are required.");
     }
 
-    const newProduct: Product = {
+    const newProduct = {
       title,
       shortDescription: shortDescription || "",
       fullDescription: fullDescription || "",
       price: parseFloat(price),
       category,
+      brand,
+      stock: parseInt(stock) || 0,
       images: images || [],
       ownerId: req.user?.id,
       rating: 5,
@@ -364,6 +381,7 @@ app.patch("/api/products/:id", requireAdmin, async (req: Request, res: Response)
 
     delete updates._id;
     if (updates.price) updates.price = parseFloat(updates.price);
+    if (updates.stock !== undefined) updates.stock = parseInt(updates.stock) || 0;
 
     await database.collection("products").updateOne(query, { $set: updates });
     const updatedDoc = await database.collection("products").findOne(query);
@@ -435,6 +453,11 @@ app.post("/api/orders", requireAuth, async (req: Request, res: Response) => {
 
     const result = await database.collection("orders").insertOne(newOrder);
     const createdOrder = { ...newOrder, _id: result.insertedId };
+
+    // If order was paid immediately, decrement the products stock count
+    if (orderStatus === "paid") {
+      await decrementProductStock(items);
+    }
 
     return sendResponse(res, 201, true, "Order created successfully", createdOrder);
   } catch (error: any) {
@@ -595,12 +618,18 @@ app.post("/api/payments/webhook", express.raw({ type: "application/json" }), asy
 
       if (event.type === "payment_intent.succeeded") {
         const intent = event.data.object as Stripe.PaymentIntent;
-        // Mark matching order as paid
         const database = await getDatabase();
-        await database.collection("orders").updateMany(
-          { stripePaymentIntentId: intent.id },
-          { $set: { status: "paid" } }
-        );
+        
+        // Find existing order to verify it hasn't been set to paid yet (avoid double stock decrement)
+        const order = await database.collection("orders").findOne({ stripePaymentIntentId: intent.id });
+        if (order && order.status !== "paid") {
+          await database.collection("orders").updateOne(
+            { _id: order._id },
+            { $set: { status: "paid" } }
+          );
+          // Decrement product stock levels
+          await decrementProductStock(order.items);
+        }
       }
 
       return sendResponse(res, 200, true, "Webhook processed", { type: event.type });
@@ -613,6 +642,36 @@ app.post("/api/payments/webhook", express.raw({ type: "application/json" }), asy
   // Fallback: log and acknowledge without verification
   console.log("Stripe webhook received (no signature verification).");
   return sendResponse(res, 200, true, "Webhook received.");
+});
+
+// ---- Cart Routes ----
+
+app.get("/api/cart", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const database = await getDatabase();
+    const cart = await database.collection("carts").findOne({ userId: req.user!.id });
+    return sendResponse(res, 200, true, "Cart retrieved successfully", cart || { items: [] });
+  } catch (error: any) {
+    return sendResponse(res, 500, false, "Failed to retrieve cart.", null, error.message);
+  }
+});
+
+app.post("/api/cart", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const database = await getDatabase();
+    const { items } = req.body;
+    if (!Array.isArray(items)) {
+      return sendResponse(res, 400, false, "Items must be an array.");
+    }
+    await database.collection("carts").updateOne(
+      { userId: req.user!.id },
+      { $set: { items, updatedAt: new Date() } },
+      { upsert: true }
+    );
+    return sendResponse(res, 200, true, "Cart updated successfully");
+  } catch (error: any) {
+    return sendResponse(res, 500, false, "Failed to update cart.", null, error.message);
+  }
 });
 
 // ---- Agentic AI Routes ----

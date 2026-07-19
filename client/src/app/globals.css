@@ -126,3 +126,66 @@ body {
 .animate-premium-fade {
   animation: premium-fade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* --- Global cursor: pointer for all interactive elements --- */
+button,
+[role="button"],
+a,
+select,
+label[for],
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Disabled elements should show not-allowed */
+button:disabled,
+input:disabled,
+select:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* --- Smooth fade-in dropdown animation --- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* --- Premium light theme card improvements --- */
+.card-elevated {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.card-elevated:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+/* --- Subtle divider line --- */
+.divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.06), transparent);
+}
+
+/* --- Selection highlight --- */
+::selection {
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--primary-dark);
+}
