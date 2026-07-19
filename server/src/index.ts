@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient, Db, ObjectId } from "mongodb";
+import Stripe from "stripe";
 
 // Load environment variables
 dotenv.config();
@@ -51,6 +52,7 @@ export interface User {
   image?: string;
   role: "user" | "admin";
   createdAt: Date;
+  userRole?: string;
 }
 
 export interface Review {
@@ -142,15 +144,10 @@ function sendResponse(
 }
 
 // ---- Authentication Middlewares ----
-// Client sends Authorization: Bearer <session-token> on every request.
-// Express validates the token by calling the Next.js /api/auth/get-session endpoint.
-// BETTER_AUTH_URL must point to the Next.js app (default: http://localhost:3000).
+// ---- Custom Token-based Authentication Middlewares ----
 
-async function requireAuth(req: Request, res: Response, next: NextFunction) {
+async function verifyToken(req: Request, res: Response, next: NextFunction) {
   try {
-    const nextjsAuthUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
-
-    // Extract Bearer token from Authorization header
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
@@ -158,46 +155,74 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
       return sendResponse(res, 401, false, "Unauthorized. No session token provided. Please sign in.");
     }
 
-    // Validate the token via the Next.js Better Auth endpoint
-    const sessionRes = await fetch(`${nextjsAuthUrl}/api/auth/get-session`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    const database = await getDatabase();
+    
+    // Find session by token in the session collection
+    const session = await database.collection("session").findOne({ token });
+    if (!session) {
+      return sendResponse(res, 401, false, "Unauthorized. Invalid session token.");
+    }
+
+    // Check expiration
+    if (new Date(session.expiresAt) < new Date()) {
+      return sendResponse(res, 401, false, "Unauthorized. Session token has expired.");
+    }
+
+    // Find user associated with the session userId
+    const userId = session.userId;
+    const userQuery = ObjectId.isValid(userId) ? { _id: new ObjectId(userId) } : { _id: userId };
+    
+    const user = await database.collection("user").findOne({
+      $or: [
+        userQuery,
+        { id: userId }
+      ]
     });
 
-    if (!sessionRes.ok) {
-      return sendResponse(res, 401, false, "Unauthorized. Session validation failed.");
+    if (!user) {
+      return sendResponse(res, 401, false, "Unauthorized. Session user not found.");
     }
 
-    const session = await sessionRes.json() as any;
-
-    if (!session?.user) {
-      return sendResponse(res, 401, false, "Unauthorized. Invalid or expired session.");
-    }
-
-    // Attach validated user to request object
+    // Attach user to req.user with role mapped to userRole
     req.user = {
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-      image: session.user.image || undefined,
-      role: (session.user.role as "user" | "admin") || "user",
-      createdAt: new Date(session.user.createdAt),
+      id: user.id || String(user._id),
+      name: user.name,
+      email: user.email,
+      image: user.image || undefined,
+      role: user.role || "user",
+      userRole: user.role || "user",
+      createdAt: new Date(user.createdAt || Date.now()),
     };
 
     next();
   } catch (error: any) {
-    console.error("Authentication middleware error:", error);
-    return sendResponse(res, 500, false, "Authentication check failed.", null, error.message);
+    console.error("Token verification error:", error);
+    return sendResponse(res, 500, false, "Token check failed.", null, error.message);
   }
 }
 
+function verifyUser(req: Request, res: Response, next: NextFunction) {
+  if (!req.user || req.user.userRole !== "user") {
+    return sendResponse(res, 403, false, "Forbidden. User role required.");
+  }
+  next();
+}
+
+function verifyAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.user || req.user.userRole !== "admin") {
+    return sendResponse(res, 403, false, "Forbidden. Admin role required.");
+  }
+  next();
+}
+
+// Map compatibility helper wrappers
+async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  await verifyToken(req, res, next);
+}
+
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  await requireAuth(req, res, () => {
-    if (!req.user || req.user.role !== "admin") {
-      return sendResponse(res, 403, false, "Forbidden. Admin access required.");
-    }
-    next();
+  await verifyToken(req, res, () => {
+    verifyAdmin(req, res, next);
   });
 }
 
@@ -396,11 +421,14 @@ app.post("/api/orders", requireAuth, async (req: Request, res: Response) => {
       return sendResponse(res, 400, false, "Order items and total amount are required.");
     }
 
+    // If stripePaymentIntentId is supplied the payment already succeeded — store as "paid"
+    const orderStatus = stripePaymentIntentId ? "paid" : "pending";
+
     const newOrder: Order = {
       userId: req.user!.id,
       items,
       totalAmount: parseFloat(totalAmount),
-      status: "pending",
+      status: orderStatus,
       stripePaymentIntentId,
       createdAt: new Date()
     };
@@ -514,28 +542,77 @@ app.get("/api/orders/analytics/by-category", requireAdmin, async (req: Request, 
 });
 
 // ---- Payments Routes ----
+// Initialize Stripe only when the secret key is available (graceful fallback for test/dev)
+const stripeClient = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
 
 app.post("/api/payments/create-payment-intent", requireAuth, async (req: Request, res: Response) => {
   try {
-    const { amount } = req.body;
-    if (!amount) {
-      return sendResponse(res, 400, false, "Amount is required.");
+    const { amount, currency = "usd" } = req.body;
+    if (!amount || typeof amount !== "number" || amount <= 0) {
+      return sendResponse(res, 400, false, "A valid positive amount (in cents) is required.");
     }
 
-    const clientSecret = `pi_mock_intent_${new ObjectId().toString()}_secret_${Math.random().toString(36).substring(2)}`;
-    
-    return sendResponse(res, 200, true, "Payment intent created", {
-      clientSecret,
-      amount
-    });
+    if (stripeClient) {
+      // Real Stripe payment intent
+      const intent = await stripeClient.paymentIntents.create({
+        amount: Math.round(amount), // amount in cents
+        currency,
+        automatic_payment_methods: { enabled: true },
+        metadata: { userId: req.user!.id },
+      });
+      return sendResponse(res, 200, true, "Payment intent created", {
+        clientSecret: intent.client_secret,
+        paymentIntentId: intent.id,
+        amount: intent.amount,
+      });
+    } else {
+      // Simulated intent for test environments without Stripe keys
+      const mockId = `pi_test_${new ObjectId().toString()}`;
+      const clientSecret = `${mockId}_secret_${Math.random().toString(36).substring(2, 15)}`;
+      return sendResponse(res, 200, true, "Payment intent created (simulated)", {
+        clientSecret,
+        paymentIntentId: mockId,
+        amount,
+        simulated: true,
+      });
+    }
   } catch (error: any) {
-    return sendResponse(res, 500, false, "Failed to initiate payment intent.", null, error.message);
+    return sendResponse(res, 500, false, "Failed to create payment intent.", null, error.message);
   }
 });
 
-app.post("/api/payments/webhook", (req: Request, res: Response) => {
-  console.log("Payment webhook event received");
-  return sendResponse(res, 200, true, "Stripe Webhook processed successfully.");
+// Webhook — verifies Stripe signature when STRIPE_WEBHOOK_SECRET is set
+app.post("/api/payments/webhook", express.raw({ type: "application/json" }), async (req: Request, res: Response) => {
+  const sig = req.headers["stripe-signature"];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (stripeClient && sig && webhookSecret) {
+    try {
+      const event = stripeClient.webhooks.constructEvent(req.body, sig, webhookSecret);
+      console.log("Stripe webhook event received:", event.type);
+
+      if (event.type === "payment_intent.succeeded") {
+        const intent = event.data.object as Stripe.PaymentIntent;
+        // Mark matching order as paid
+        const database = await getDatabase();
+        await database.collection("orders").updateMany(
+          { stripePaymentIntentId: intent.id },
+          { $set: { status: "paid" } }
+        );
+      }
+
+      return sendResponse(res, 200, true, "Webhook processed", { type: event.type });
+    } catch (err: any) {
+      console.error("Webhook signature verification failed:", err.message);
+      return sendResponse(res, 400, false, "Webhook signature verification failed.");
+    }
+  }
+
+  // Fallback: log and acknowledge without verification
+  console.log("Stripe webhook received (no signature verification).");
+  return sendResponse(res, 200, true, "Webhook received.");
 });
 
 // ---- Agentic AI Routes ----

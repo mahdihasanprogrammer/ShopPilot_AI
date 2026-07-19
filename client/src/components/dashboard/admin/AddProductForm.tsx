@@ -174,7 +174,7 @@ export default function AddProductForm() {
 
     if (res.success) {
       setToast({ type: "success", message: "Product created successfully! Redirecting…" });
-      setTimeout(() => router.push("/dashboard/items/manage"), 1800);
+      setTimeout(() => router.push("/dashboard/admin/manage-products"), 1800);
     } else {
       setToast({ type: "error", message: res.error || "Failed to create product. Please try again." });
       setLoading(false);
@@ -325,7 +325,7 @@ export default function AddProductForm() {
         </button>
         <button
           type="button"
-          onClick={() => router.push("/dashboard/items/manage")}
+          onClick={() => router.push("/dashboard/admin/manage-products")}
           className="rounded-xl border border-bg-secondary bg-background px-6 py-3 text-sm font-semibold text-text-neutral hover:bg-bg-secondary transition-all"
         >
           Cancel

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { addToCart } from "@/lib/cart";
 import { Product } from "@/types";
 import ImageGallery from "@/components/products/details/ImageGallery";
 import SpecsTable from "@/components/products/details/SpecsTable";
@@ -11,7 +12,7 @@ import ReviewCard from "@/components/products/details/ReviewCard";
 import RelatedProducts from "@/components/products/details/RelatedProducts";
 import AISummaryCard from "@/components/products/details/AISummaryCard";
 import SkeletonLoader from "@/components/shared/SkeletonLoader";
-import { RiArrowLeftLine, RiShoppingCartLine, RiWallet2Line, RiStarFill, RiChat3Line, RiErrorWarningLine } from "react-icons/ri";
+import { RiArrowLeftLine, RiShoppingCartLine, RiWallet2Line, RiStarFill, RiChat3Line, RiErrorWarningLine, RiCheckLine } from "react-icons/ri";
 
 export default function ProductDetailsPage({
   params,
@@ -24,6 +25,7 @@ export default function ProductDetailsPage({
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -52,10 +54,26 @@ export default function ProductDetailsPage({
   }, [id]);
 
   const handleAddToCart = () => {
-    alert(`"${product?.title}" added to cart! (Cart operations will be fully functional in checkout flow)`);
+    if (!product) return;
+    addToCart({
+      productId: product.id || String((product as any)._id),
+      title: product.title,
+      price: product.price,
+      image: product.images?.[0],
+    });
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
   };
 
   const handleBuyNow = () => {
+    if (product) {
+      addToCart({
+        productId: product.id || String((product as any)._id),
+        title: product.title,
+        price: product.price,
+        image: product.images?.[0],
+      });
+    }
     router.push("/checkout");
   };
 
@@ -155,10 +173,17 @@ export default function ProductDetailsPage({
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               onClick={handleAddToCart}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary/20 hover:border-primary bg-background px-6 py-3.5 text-sm font-bold text-primary transition-all hover:bg-primary/5"
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl border-2 px-6 py-3.5 text-sm font-bold transition-all ${
+                addedToCart
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                  : "border-primary/20 hover:border-primary bg-background text-primary hover:bg-primary/5"
+              }`}
             >
-              <RiShoppingCartLine className="h-4.5 w-4.5" />
-              Add to Cart
+              {addedToCart ? (
+                <><RiCheckLine className="h-4.5 w-4.5" />Added to Cart!</>
+              ) : (
+                <><RiShoppingCartLine className="h-4.5 w-4.5" />Add to Cart</>
+              )}
             </button>
             <button
               onClick={handleBuyNow}

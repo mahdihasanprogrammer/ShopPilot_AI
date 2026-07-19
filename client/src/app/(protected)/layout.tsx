@@ -1,25 +1,27 @@
-import RouteGuard from "@/components/shared/RouteGuard";
+"use client";
 
-/**
- * Protected Route Group Layout
- *
- * Two-layer protection strategy (PRD §3 / §11):
- *
- * Layer 1 — Edge Middleware (middleware.ts):
- *   Fast, cookie-based session check. Redirects unauthenticated requests
- *   to /login?callbackUrl=<original-path> before the page renders.
- *
- * Layer 2 — Client RouteGuard (this layout):
- *   Hydrated role check. Redirects authenticated-but-wrong-role visitors
- *   (e.g. regular user accessing /dashboard/admin) to /dashboard/user.
- *
- * Real security boundary remains on the Express backend via
- * requireAuth / requireAdmin middleware (Prompt 03).
- */
+import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import { usePathname } from "next/navigation";
+
 export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <RouteGuard>{children}</RouteGuard>;
+  const pathname = usePathname();
+  const isDashboard = pathname.startsWith("/dashboard");
+
+  if (isDashboard) {
+    return (
+      <div className="flex flex-col lg:flex-row min-h-screen w-full bg-background">
+        <DashboardSidebar />
+        <div className="flex-1 flex flex-col min-w-0 bg-background overflow-y-auto">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  // Non-dashboard protected routes (like /checkout) get a clean full-width experience without sidebar
+  return <>{children}</>;
 }

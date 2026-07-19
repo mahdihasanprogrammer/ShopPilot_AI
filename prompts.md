@@ -121,64 +121,89 @@ Build `/login` and `/register` using the Better Auth client from Prompt 03.
 
 ---
 
-## Prompt 08 — Protected Route Guard (Role-Aware)
+## Prompt 08 — Protected Route Guard + Dashboard Sidebar Shell
 
-You are a Senior Next.js Developer. Follow `PRD.md` §3.
+You are a Senior Next.js Developer. Follow `PRD.md` §3 (route guard rules) and §4a (dashboard layout rule) strictly.
 
-Build the route protection system: unauthenticated → `/login` (save path); authenticated but wrong role on `/dashboard/admin` → `/dashboard/user`.
+### Part A — Route Guard
+Build the route protection system: unauthenticated → `/login` (save path); role mismatch (user on `/dashboard/admin/*`, or admin on `/dashboard/user/*`) → `/forbidden` (mutual, strict separation).
 
-- Apply to the `(protected)` route group: `/dashboard/user`, `/dashboard/admin`, `/checkout`, `/dashboard/items/add`, `/dashboard/items/manage`
+- Apply to the `(protected)` route group: `/dashboard/user`, `/dashboard/user/profile`, `/dashboard/user/orders`, `/dashboard/admin`, `/dashboard/admin/profile`, `/dashboard/admin/manage-products`, `/dashboard/admin/add-product`, `/dashboard/admin/manage-orders`, `/checkout`
+- All `/dashboard/admin/*` routes require `role === "admin"`; all `/dashboard/user/*` routes require `role === "user"` (admin excluded)
 - This is a UX-layer guard — backend `requireAuth`/`requireAdmin` (Prompt 03) remains the real security boundary (PRD §11)
 
-**Output:** Full code for `middleware.ts` (or wrapper component) applied to the protected layout.
+### Part C — Forbidden Page (`/forbidden`)
+Build `/forbidden`: centered message ("You don't have permission to access this page"), two buttons — **Back** (`router.back()`) and **Home** (`→ /`).
+
+### Part B — Dashboard Sidebar Shell (replaces Navbar inside `/dashboard/*`)
+Build a shared `DashboardLayout` (used by both `/dashboard/user/*` and `/dashboard/admin/*` route groups) that:
+- Renders a **Sidebar** (not the public Navbar) with role-specific links per PRD §4a — User: Overview, My Orders, Profile Settings, AI Assistant, Back to Site, Logout. Admin: Overview, Manage Products, Add Product, Manage Orders, Profile, Back to Site, Logout
+- **Desktop**: sidebar always visible, fixed on the left
+- **Mobile**: sidebar hidden by default; a hamburger icon in a slim top bar opens it as a slide-in drawer with a backdrop overlay, closable by tapping the backdrop or a close icon — this hamburger only appears inside `/dashboard/*`, never alongside the public Navbar
+- Includes a **"Back to Site"** link (arrow-left icon + label) navigating to `/`
+- Highlights the currently active route in the sidebar
+- `/checkout` does NOT use this dashboard shell — it keeps the public Navbar (it's a protected route but not part of the dashboard section)
+
+**Output:** Full code for `middleware.ts` (or wrapper component) for the route guard, the `/forbidden` page, plus the `DashboardLayout`, `Sidebar`, and `MobileSidebarDrawer` components applied to the `/dashboard/user` and `/dashboard/admin` route groups.
 
 ---
 
-## Prompt 09 — User Dashboard
+## Prompt 09 — User Dashboard (Overview, Profile, Orders)
 
 You are a Senior Next.js Developer. Follow `PRD.md` §4 (User Dashboard section).
 
-Build `/dashboard/user`: welcome section, profile card, stats cards, recent orders, quick actions (Continue Shopping / Checkout / Logout), internal nav.
+Build three pages using the shared `DashboardLayout`/`Sidebar` from Prompt 08 (Overview, My Orders, Profile Settings, AI Assistant nav items already handled there):
+
+- `/dashboard/user` — Overview: welcome section (user name from session), profile card, stats cards (Orders/Wishlist/Cart), recent orders summary, quick actions (Continue Shopping / Go to Checkout / Logout)
+- `/dashboard/user/profile` — Profile Settings: editable name/email/avatar form
+- `/dashboard/user/orders` — full order history table/list (fetch from `GET /api/orders`)
 
 - Use `useSession()` for user data — no hardcoded values
-- Fetch orders from `GET /api/orders`
 - Skeleton loaders while fetching
 
-**Output:** Full `/dashboard/user` page + `StatCard`, `RecentOrdersTable`, `ProfileCard` components.
+**Output:** Full code for all three pages, the shared dashboard layout/sidebar, and `StatCard`, `RecentOrdersTable`, `ProfileCard` components.
 
 ---
 
-## Prompt 10 — Admin Dashboard (with Recharts)
+## Prompt 10 — Admin Dashboard (Overview, Profile, Manage Products, Add Product, Manage Orders, with Recharts)
 
-You are a Senior Next.js Developer. Follow `PRD.md` §4 (Admin Dashboard section).
+You are a Senior Next.js Developer. Follow `PRD.md` §4 (Admin Dashboard section). All routes below are **admin-only**, guarded per Prompt 08.
 
-Build `/dashboard/admin` (admin-only, guarded per Prompt 08): stats cards, Recharts revenue chart, Recharts category chart, recent orders table (all users), quick links.
+Build a shared admin section using the `DashboardLayout`/`Sidebar` from Prompt 08 (Overview, Manage Products, Add Product, Manage Orders, Profile nav items already handled there) with these pages:
+
+- `/dashboard/admin` — Overview: stats cards (Total Products/Orders/Revenue/Users), Recharts revenue chart, Recharts category chart, recent orders table (all users), quick links to the sub-pages
+- `/dashboard/admin/profile` — admin's own profile settings
+- `/dashboard/admin/manage-products` — table/grid of all products, View/Delete (confirmation modal)/optional Edit
+- `/dashboard/admin/add-product` — Add Product form (Title, Short Description, Full Description, Price, Category, Optional Image URL) → `POST /api/products`, success toast → redirect to `manage-products`
+- `/dashboard/admin/manage-orders` — table of all orders (all users), status-update dropdown → `PATCH /api/orders/:id`
 
 - Fetch analytics from `GET /api/orders/analytics/revenue` and `/by-category`
 - Use Recharts `ResponsiveContainer` for responsive charts
-- Same design system as User Dashboard
+- Same design system as User Dashboard, skeleton loaders on every fetch
 
-**Output:** Full `/dashboard/admin` page + `RevenueChart`, `CategoryChart`, `AdminOrdersTable` components.
-
----
-
-## Prompt 11 — Protected Page: Add Product (`/dashboard/items/add`)
-
-You are a Senior Next.js Developer. Follow `PRD.md` §5.5.
-
-Build the Add Product form with the exact fields listed in PRD §5.5, validation, submit to `POST /api/products`, success toast → redirect to `/dashboard/items/manage`.
-
-**Output:** Full `/dashboard/items/add` page + form component with the fetch call.
+**Output:** Full code for all five pages, the shared admin layout/sidebar, and `RevenueChart`, `CategoryChart`, `AdminOrdersTable`, `ProductManageTable`, `AddProductForm` components.
 
 ---
 
-## Prompt 12 — Protected Page: Manage Products (`/dashboard/items/manage`)
+## Prompt 11 — Deep Dive: Add Product Page (`/dashboard/admin/add-product`)
 
-You are a Senior Next.js Developer. Follow `PRD.md` §5.6.
+You are a Senior Next.js Developer. Follow `PRD.md` §5.5. (If already built as part of Prompt 10, use this to refine/harden just this page.)
 
-Build the Manage Products table/grid: View, Delete (with confirmation modal), optional Edit. Fetch from `GET /api/products` (own or all if admin). Empty state + skeleton loader.
+Build/refine the Add Product form: fields exactly as PRD §5.5, client-side validation with inline errors, submit to `POST /api/products`, success toast → redirect to `/dashboard/admin/manage-products`, error handling on server validation failure. Admin-only access.
 
-**Output:** Full `/dashboard/items/manage` page + `ProductManageTable` + delete confirmation modal.
+**Output:** Full `/dashboard/admin/add-product` page + form component with the fetch call.
+
+---
+
+## Prompt 12 — Deep Dive: Manage Products & Manage Orders (`/dashboard/admin/manage-products`, `/dashboard/admin/manage-orders`)
+
+You are a Senior Next.js Developer. Follow `PRD.md` §5.6 and §5.6b. (If already built as part of Prompt 10, use this to refine/harden these two pages.)
+
+**Manage Products:** table/grid of all products, View, Delete (confirmation modal), optional Edit. Fetch from `GET /api/products`. Empty state + skeleton loader.
+
+**Manage Orders:** table of all orders (all users) — Order ID, Customer, Product, Amount, Status, Date — with a status-update dropdown calling `PATCH /api/orders/:id`. Fetch from `GET /api/orders`.
+
+**Output:** Full code for both pages + `ProductManageTable`, delete confirmation modal, and `AdminOrdersTable` with the status-update control.
 
 ---
 
@@ -240,7 +265,7 @@ Go through every page built in Prompts 04–13 and 16, replace any remaining pla
 - [ ] Login/Register — fully wired, demo login + Google login work
 - [ ] User Dashboard — real orders/stats
 - [ ] Admin Dashboard — real Recharts data, real orders table
-- [ ] Add/Manage Product — real persistence
+- [ ] Admin: Add/Manage Products, Manage Orders — real persistence and status updates
 - [ ] Checkout — real Stripe test flow end-to-end
 - [ ] AI Recommendation + Chat — real Claude calls
 - [ ] Contact — real submission

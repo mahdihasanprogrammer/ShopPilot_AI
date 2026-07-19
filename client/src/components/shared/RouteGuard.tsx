@@ -5,10 +5,13 @@ import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { RiLoader4Line } from "react-icons/ri";
 
-// Admin-only route prefixes — regular users redirected to /dashboard/user
 const ADMIN_ONLY_PREFIXES = [
   "/dashboard/admin",
   "/dashboard/items",
+];
+
+const USER_ONLY_PREFIXES = [
+  "/dashboard/user",
 ];
 
 interface RouteGuardProps {
@@ -21,46 +24,61 @@ export default function RouteGuard({ children }: RouteGuardProps) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Still loading session — wait before making decisions
     if (isPending) return;
 
-    // No session at all — middleware should have caught this, but belt-and-suspenders
+    // No session — redirect to login
     if (!session?.user) {
       const loginUrl = `/login?callbackUrl=${encodeURIComponent(pathname)}`;
       router.replace(loginUrl);
       return;
     }
 
-    // Check admin-only routes
+    const userRole = session.user.role || "user";
+
+    // 1. Admin-only check
     const isAdminRoute = ADMIN_ONLY_PREFIXES.some((prefix) =>
       pathname.startsWith(prefix)
     );
+    if (isAdminRoute && userRole !== "admin") {
+      router.replace("/forbidden");
+      return;
+    }
 
-    if (isAdminRoute && session.user.role !== "admin") {
-      // Authenticated but wrong role — redirect to user dashboard, NOT login
-      router.replace("/dashboard/user");
+    // 2. User-only check (mutual isolation: admins cannot visit user-only dashboard paths)
+    const isUserRoute = USER_ONLY_PREFIXES.some((prefix) =>
+      pathname.startsWith(prefix)
+    );
+    if (isUserRoute && userRole !== "user") {
+      router.replace("/forbidden");
+      return;
     }
   }, [isPending, session, pathname, router]);
 
-  // Show centered spinner while session is loading or redirect is in flight
+  // Loading spinner
   if (isPending) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] gap-3">
         <RiLoader4Line className="h-8 w-8 animate-spin text-primary" />
         <p className="text-xs font-semibold text-text-neutral/50 uppercase tracking-wider">
-          Verifying session…
+          Verifying session credentials…
         </p>
       </div>
     );
   }
 
-  // While redirecting (no session or wrong role), render nothing
+  // Pre-render guards
   if (!session?.user) return null;
 
+  const userRole = session.user.role || "user";
   const isAdminRoute = ADMIN_ONLY_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix)
   );
-  if (isAdminRoute && session.user.role !== "admin") return null;
+  const isUserRoute = USER_ONLY_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix)
+  );
+
+  if (isAdminRoute && userRole !== "admin") return null;
+  if (isUserRoute && userRole !== "user") return null;
 
   return <>{children}</>;
 }

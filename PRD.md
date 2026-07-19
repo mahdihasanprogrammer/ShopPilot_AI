@@ -52,6 +52,7 @@
 | `/products/[id]` | Product Details |
 | `/login`, `/register` | Auth |
 | `/about`, `/contact` | Additional pages |
+| `/forbidden` | Forbidden page (role mismatch) |
 
 ### Protected Routes (Better Auth session required)
 | Route | Page | Role |
@@ -68,9 +69,15 @@
 
 **Rules:**
 - Unauthenticated → redirect `/login`, save original path, redirect back after login success
-- Non-admin visiting any `/dashboard/admin/*` route → redirect `/dashboard/user` (not `/login`, since they ARE logged in)
+- Role isolation is **mutual**: a `user` cannot access any `/dashboard/admin/*` route, and an `admin` cannot access any `/dashboard/user/*` route
+- On a role mismatch → redirect to `/forbidden` (dedicated Forbidden page, not a silent redirect to their own dashboard)
 - Navbar: minimum 3 routes visible logged-out, minimum 5 routes logged-in
 - Add/Manage Product/Order features are **admin-only** — regular users do not see these routes or links
+
+### Forbidden Page (`/forbidden`)
+- Shown when a logged-in user tries to access a route belonging to the other role
+- Centered message: "You don't have permission to access this page"
+- Two buttons: **Back** (previous page) and **Home** (→ `/`)
 
 ---
 
@@ -80,7 +87,7 @@
 - `/dashboard/user` (Overview/Home): welcome section (user name from session), stats cards (Orders / Wishlist / Cart counts), recent orders summary, quick actions (Continue Shopping, Go to Checkout, Logout)
 - `/dashboard/user/profile`: profile card (name, email, avatar), edit profile form
 - `/dashboard/user/orders`: full order history list/table
-- Internal sidebar/tab nav across all three: Overview, My Orders, Profile Settings, AI Assistant (link/launch chat widget)
+- Sidebar navigation across all three pages, per §4a
 
 ### Admin Dashboard
 - `/dashboard/admin` (Overview/Home): stats cards (Total Products, Total Orders, Total Revenue, Total Users), Recharts (Revenue over time, Orders by category), recent orders table (all users), quick links to the sub-pages below
@@ -88,15 +95,28 @@
 - `/dashboard/admin/manage-products`: table/grid of all products — View, Delete (confirmation modal), optional Edit
 - `/dashboard/admin/add-product`: Add Product form (Title, Short Description, Full Description, Price, Category, Optional Image URL) → `POST /api/products`
 - `/dashboard/admin/manage-orders`: table of all orders across users, with a status-update dropdown (pending → paid → shipped → delivered)
-- Internal sidebar/tab nav across all: Overview, Manage Products, Add Product, Manage Orders, Profile
+- Sidebar navigation across all five pages, per §4a
 - Access strictly limited to `role: "admin"` (frontend guard + backend `requireAdmin` middleware) on every sub-route above
 
 ---
 
-## 5. Page-Level Requirements
+## 4a. Dashboard Layout Rule (Sidebar, not Navbar)
+
+- Public pages (`/`, `/products`, `/products/[id]`, `/login`, `/register`, `/about`, `/contact`) use the standard **top Navbar** (PRD §5.1).
+- All `/dashboard/*` pages (both User and Admin) use a **Sidebar layout instead of the top Navbar** — no public Navbar rendered inside the dashboard shell.
+- **Desktop**: sidebar permanently visible on the left (Overview, sub-pages, Logout at the bottom).
+- **Mobile/small devices**: sidebar is hidden by default, replaced by a **hamburger icon** in a slim top bar. Tapping it opens the sidebar as a slide-in drawer (with an overlay/backdrop, closes on outside tap or an explicit close icon).
+- This hamburger icon is **only** shown while inside `/dashboard/*` routes. On public pages, the normal Navbar (with its own menu icon on mobile, per PRD §5.1) is shown instead — the two never appear together.
+- The sidebar (desktop and mobile drawer) must include a **"Back to Site"** link/icon (e.g. an arrow-left + "Back to Home") that navigates back to `/`, so the user isn't stuck inside the dashboard shell.
+- Sidebar content:
+  - **User**: Overview, My Orders, Profile Settings, AI Assistant, Back to Site, Logout
+  - **Admin**: Overview, Manage Products, Add Product, Manage Orders, Profile, Back to Site, Logout
+- Active route in the sidebar should be visually highlighted (per current path).
+
+---
 
 ### 5.1 Home Page
-Sections (8 total, exceeds 7 minimum): Sticky Navbar, Hero (60–70% viewport height, CTA + interactive element), Categories (6 cards), Featured Products (8 items, 4-col grid, skeleton loader), Why Choose Us (4 cards), Testimonials (3 cards), AI Assistant Highlight, Newsletter, Footer (working links + contact/social info).
+Sections (8 total, exceeds 7 minimum): Sticky Navbar (public pages only — see §4a for dashboard layout), Hero (60–70% viewport height, CTA + interactive element), Categories (6 cards), Featured Products (8 items, 4-col grid, skeleton loader), Why Choose Us (4 cards), Testimonials (3 cards), AI Assistant Highlight, Newsletter, Footer (working links + contact/social info).
 
 ### 5.2 Product Listing (`/products`)
 - Search bar (debounced)
@@ -115,11 +135,14 @@ Sections (8 total, exceeds 7 minimum): Sticky Navbar, Hero (60–70% viewport he
 - Login: email/password, demo login button (auto-fill + submit), Google login, validation, redirect-back-after-login logic
 - Register: name/email/password/confirm, validation, auto-login after register
 
-### 5.5 Add Product (`/dashboard/items/add`)
-Fields: Title, Short Description, Full Description, Price, Category, Optional Image URL. Submit → `POST /api/products`.
+### 5.5 Add Product (`/dashboard/admin/add-product`)
+Fields: Title, Short Description, Full Description, Price, Category, Optional Image URL. Submit → `POST /api/products`. Admin-only.
 
-### 5.6 Manage Products (`/dashboard/items/manage`)
-Table/grid of products (own or all if admin). Actions: View, Delete (confirmation modal), optional Edit.
+### 5.6 Manage Products (`/dashboard/admin/manage-products`)
+Table/grid of all products. Actions: View, Delete (confirmation modal), optional Edit. Admin-only.
+
+### 5.6b Manage Orders (`/dashboard/admin/manage-orders`)
+Table of all orders across all users: Order ID, Customer, Product, Amount, Status, Date. Status-update dropdown (pending → paid → shipped → delivered) → `PATCH /api/orders/:id`. Admin-only.
 
 ### 5.7 Checkout (`/checkout`)
 Order Summary, Shipping Info form, Stripe Elements card payment (Test Mode), Place Order → create payment intent → confirm payment → save order → success redirect.
@@ -178,6 +201,7 @@ About: platform story, AI assistant explanation. Contact: form (name/email/messa
 | PATCH/DELETE | `/api/products/:id` | Protected |
 | GET | `/api/orders` | Protected (own orders, or all if admin) |
 | POST | `/api/orders` | Protected |
+| PATCH | `/api/orders/:id` | Protected (admin — update order status) |
 | GET | `/api/orders/analytics/revenue` | Protected (admin) |
 | GET | `/api/orders/analytics/by-category` | Protected (admin) |
 | POST | `/api/payments/create-payment-intent` | Protected |
@@ -217,16 +241,22 @@ src/
 │  ├─ (public)/ (Home, Products, Product Details, Login, Register, About, Contact)
 │  ├─ (protected)/
 │  │  └─ dashboard/
-│  │     ├─ user/page.tsx          (User Dashboard — /dashboard/user)
-│  │     ├─ admin/page.tsx         (Admin Dashboard — /dashboard/admin)
-│  │     ├─ items/add/page.tsx     (/dashboard/items/add)
-│  │     └─ items/manage/page.tsx  (/dashboard/items/manage)
+│  │     ├─ user/
+│  │     │  ├─ page.tsx              (/dashboard/user — Overview)
+│  │     │  ├─ profile/page.tsx      (/dashboard/user/profile)
+│  │     │  └─ orders/page.tsx       (/dashboard/user/orders)
+│  │     └─ admin/
+│  │        ├─ page.tsx              (/dashboard/admin — Overview)
+│  │        ├─ profile/page.tsx      (/dashboard/admin/profile)
+│  │        ├─ manage-products/page.tsx  (/dashboard/admin/manage-products)
+│  │        ├─ add-product/page.tsx      (/dashboard/admin/add-product)
+│  │        └─ manage-orders/page.tsx    (/dashboard/admin/manage-orders)
 │  ├─ (protected)/checkout/page.tsx
 │  ├─ layout.tsx
 │  └─ globals.css
 ├─ components/
 │  ├─ ui/
-│  ├─ layout/ (Navbar, Footer)
+│  ├─ layout/ (Navbar, Footer, DashboardSidebar, MobileSidebarDrawer)
 │  └─ shared/ (ProductCard, SkeletonLoader, ChatWidget, etc.)
 ├─ lib/ (auth-client.ts, api.ts, utils.ts)
 └─ types/index.ts

@@ -27,8 +27,20 @@ async function request<T>(
   }
 
   // Attach session token as Bearer for Express backend auth
-  if (_sessionToken && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${_sessionToken}`);
+  if (!headers.has("Authorization")) {
+    let token = _sessionToken;
+    if (!token && typeof window !== "undefined") {
+      try {
+        const { authClient } = await import("./auth-client");
+        const session = await authClient.getSession();
+        token = session?.data?.session?.token || null;
+      } catch (err) {
+        console.error("Failed to retrieve auth token for request:", err);
+      }
+    }
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
   }
 
   const config: RequestInit = {

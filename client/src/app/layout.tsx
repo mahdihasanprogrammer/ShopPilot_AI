@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import ConditionalShell from "@/components/shared/ConditionalShell";
 import ChatWidget from "@/components/shared/ChatWidget";
-import { AuthProvider } from "@/components/shared/AuthProvider";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -25,12 +23,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${outfit.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background font-sans">
-        <AuthProvider>
-          <Navbar />
+        <ConditionalShell>
           {children}
-          <Footer />
-          <ChatWidget />
-        </AuthProvider>
+        </ConditionalShell>
+        <ChatWidget />
       </body>
     </html>
   );
