@@ -22,22 +22,31 @@ import {
 } from "react-icons/fi";
 
 export default function CartDrawer() {
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
   const user = session?.user;
   const isAdmin = user?.role === "admin";
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const syncCart = useCallback(() => setCart(getCart()), []);
 
   useEffect(() => {
+    setMounted(true);
     syncCart();
     window.addEventListener("cart-updated", syncCart);
     return () => window.removeEventListener("cart-updated", syncCart);
   }, [syncCart]);
 
-  // Don't show cart icon at all for admins
+  // Don't render until client-side hydration is complete
+  if (!mounted || isPending) {
+    return (
+      <div className="h-9 w-9 rounded-xl border border-black/[0.06] bg-white/40 animate-pulse" />
+    );
+  }
+
+  // Don't show cart icon for admins
   if (isAdmin) return null;
 
   const count = getCartCount(cart);
@@ -50,6 +59,7 @@ export default function CartDrawer() {
         onClick={() => setOpen(true)}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-black/[0.06] bg-white/60 text-text-neutral/70 hover:text-primary hover:border-primary/20 hover:bg-primary/[0.03] transition-all duration-200"
         aria-label="Open cart"
+        id="cart-drawer-trigger"
       >
         <FiShoppingCart className="h-4.5 w-4.5" />
         {count > 0 && (
@@ -69,12 +79,12 @@ export default function CartDrawer() {
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-full max-w-sm flex flex-col bg-white/90 backdrop-blur-xl shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 z-50 h-full w-full max-w-sm flex flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-black/[0.04] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-black/[0.05] px-5 py-4 bg-white">
           <div className="flex items-center gap-2">
             <FiShoppingBag className="h-4.5 w-4.5 text-primary" />
             <h2 className="text-sm font-extrabold text-text-neutral">
@@ -95,7 +105,7 @@ export default function CartDrawer() {
         </div>
 
         {/* Items */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-background">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-16">
               <div className="h-16 w-16 rounded-2xl bg-black/[0.03] flex items-center justify-center">
@@ -119,44 +129,47 @@ export default function CartDrawer() {
             cart.map((item) => (
               <div
                 key={item.productId}
-                className="flex items-start gap-3 rounded-2xl border border-black/[0.04] bg-white/60 p-3 transition-all hover:border-black/[0.08]"
+                className="flex items-start gap-3 rounded-2xl border border-black/[0.05] bg-white p-3 shadow-sm"
               >
                 {/* Image */}
                 {item.image ? (
                   <img
                     src={item.image}
                     alt={item.title}
-                    className="h-14 w-14 rounded-xl object-cover border border-black/[0.04] shrink-0"
+                    className="h-16 w-16 rounded-xl object-cover border border-black/[0.04] shrink-0"
                   />
                 ) : (
-                  <div className="h-14 w-14 rounded-xl bg-black/[0.03] flex items-center justify-center shrink-0">
+                  <div className="h-16 w-16 rounded-xl bg-black/[0.03] flex items-center justify-center shrink-0">
                     <FiShoppingBag className="h-5 w-5 text-text-neutral/20" />
                   </div>
                 )}
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-text-neutral line-clamp-2 leading-snug">
+                  <p className="text-xs font-bold text-text-neutral leading-snug line-clamp-2">
                     {item.title}
                   </p>
-                  <p className="text-[11px] font-extrabold text-primary mt-0.5">
+                  <p className="text-sm font-extrabold text-primary mt-0.5">
                     ${(item.price * item.qty).toFixed(2)}
                   </p>
+                  <p className="text-[10px] text-text-neutral/40 font-medium">
+                    ${item.price.toFixed(2)} each
+                  </p>
 
-                  {/* Qty controls */}
+                  {/* Qty controls + delete */}
                   <div className="flex items-center gap-1.5 mt-2">
                     <button
                       onClick={() => updateQty(item.productId, item.qty - 1)}
-                      className="h-6 w-6 rounded-lg border border-black/[0.06] flex items-center justify-center text-text-neutral/60 hover:text-primary hover:border-primary/30 transition-all"
+                      className="h-6 w-6 rounded-lg border border-black/[0.07] flex items-center justify-center text-text-neutral/60 hover:text-primary hover:border-primary/30 transition-all bg-white"
                     >
                       <FiMinus className="h-3 w-3" />
                     </button>
-                    <span className="text-xs font-bold text-text-neutral min-w-[20px] text-center">
+                    <span className="text-xs font-bold text-text-neutral min-w-[22px] text-center">
                       {item.qty}
                     </span>
                     <button
                       onClick={() => updateQty(item.productId, item.qty + 1)}
-                      className="h-6 w-6 rounded-lg border border-black/[0.06] flex items-center justify-center text-text-neutral/60 hover:text-primary hover:border-primary/30 transition-all"
+                      className="h-6 w-6 rounded-lg border border-black/[0.07] flex items-center justify-center text-text-neutral/60 hover:text-primary hover:border-primary/30 transition-all bg-white"
                     >
                       <FiPlus className="h-3 w-3" />
                     </button>
@@ -175,12 +188,17 @@ export default function CartDrawer() {
 
         {/* Footer */}
         {cart.length > 0 && (
-          <div className="border-t border-black/[0.04] px-5 py-4 space-y-3">
+          <div className="border-t border-black/[0.05] bg-white px-5 py-4 space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-text-neutral/60">Total</span>
-              <span className="text-base font-extrabold text-text-neutral">
-                ${total.toFixed(2)}
-              </span>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-neutral/40">Total</p>
+                <p className="text-xl font-extrabold text-text-neutral">${total.toFixed(2)}</p>
+              </div>
+              {total < 75 && (
+                <p className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1">
+                  ${(75 - total).toFixed(2)} to free shipping!
+                </p>
+              )}
             </div>
             <Link
               href="/checkout"
