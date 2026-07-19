@@ -11,6 +11,7 @@ import RecentOrdersTable from "@/components/dashboard/RecentOrdersTable";
 import SkeletonLoader from "@/components/shared/SkeletonLoader";
 import { FiShoppingBag, FiHeart, FiShoppingCart, FiArrowRight, FiLogOut, FiExternalLink } from "react-icons/fi";
 import { RiRobot2Line } from "react-icons/ri";
+import RecommendationsSection from "@/components/shared/RecommendationsSection";
 
 export default function UserDashboardPage() {
   const router = useRouter();
@@ -112,6 +113,9 @@ export default function UserDashboardPage() {
           color="text-accent"
         />
       </div>
+
+      {/* AI Smart Recommendations */}
+      <RecommendationsSection />
 
       {/* Grid of Profile vs Orders table */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">

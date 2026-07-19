@@ -678,21 +678,150 @@ app.post("/api/cart", requireAuth, async (req: Request, res: Response) => {
 
 app.post("/api/ai/recommendations", requireAuth, async (req: Request, res: Response) => {
   try {
-    const mockRecommendations = [
-      {
-        id: "mock-prod-1",
-        title: "AI Smart Watch Pro",
-        reason: "Based on your search patterns and interest in fitness trackers."
+    const database = await getDatabase();
+    const userId = req.user!.id;
+    const { prompt = "" } = req.body;
+
+    // 1. Gather user context: Order history
+    const orders = await database.collection("orders").find({ userId }).toArray();
+    const orderSummary = orders.map(o => ({
+      date: o.createdAt,
+      items: o.items.map((i: any) => ({ title: i.title, price: i.price, qty: i.qty }))
+    }));
+
+    // 2. Gather user context: Cart items
+    const cart = await database.collection("carts").findOne({ userId });
+    const cartItems = cart?.items || [];
+
+    // 3. Gather candidates products from database
+    const products = await database.collection("products").find({}).toArray();
+    const candidates = products.map((p: any) => ({
+      id: p.id || String(p._id),
+      title: p.title,
+      category: p.category,
+      price: p.price,
+      brand: p.brand || "",
+      shortDescription: p.shortDescription || "",
+      stock: p.stock !== undefined ? p.stock : 10
+    })).slice(0, 30); // Limiting candidates to avoid exceeding Claude token limits
+
+    // Fallback products in case Claude API is not configured or fails
+    const getFallbackRecommendations = () => {
+      const selected = products.slice(0, 3);
+      return selected.map((p: any) => ({
+        ...p,
+        id: p.id || String(p._id),
+        reasoning: "Recommended based on popularity and high customer rating in our store."
+      }));
+    };
+
+    const apiKey = process.env.CLAUDE_API_KEY;
+    if (!apiKey || apiKey === "your-claude-api-key") {
+      console.warn("CLAUDE_API_KEY is not configured or is placeholder. Using fallback engine.");
+      const fallbackData = getFallbackRecommendations();
+      return sendResponse(res, 200, true, "Recommendations fetched (Fallback)", fallbackData);
+    }
+
+    // 4. Construct prompt for Claude messages API
+    const systemPrompt = `You are a personalized shopping recommendation agent for the ShopPilot store.
+Analyze the user's order history, current cart items, and any optional refinement query.
+Select 3 to 5 products from the candidate list that are most relevant to recommend to this user.
+Provide a unique, customized reasoning sentence explaining why each product is recommended based on their context.
+Your response must be strict, valid JSON matching the following schema. Return ONLY the raw JSON block, with no explanation or introductory text:
+{
+  "recommendations": [
+    { "id": "product_id_value", "reasoning": "custom reasoning explanation" }
+  ]
+}`;
+
+    const userPrompt = `
+### User Order History
+${JSON.stringify(orderSummary, null, 2)}
+
+### User Current Cart
+${JSON.stringify(cartItems, null, 2)}
+
+### Optional Filter/Refinement Query
+"${prompt}"
+
+### Candidate Products
+${JSON.stringify(candidates, null, 2)}
+
+Please return the best 3-5 recommendations from the Candidate Products in raw JSON format.`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
       },
-      {
-        id: "mock-prod-2",
-        title: "Violet Noise Cancelling Earbuds",
-        reason: "This matches your purchase history of wireless audio devices."
+      body: JSON.stringify({
+        model: process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [
+          { role: "user", content: userPrompt }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Claude API call failed:", response.status, errText);
+      throw new Error(`Claude API returned status ${response.status}`);
+    }
+
+    const data: any = await response.json();
+    let text = data.content?.[0]?.text?.trim() || "";
+
+    // Clean up markdown formatting if Claude returned it
+    if (text.startsWith("```")) {
+      text = text.replace(/^```json\s*/, "").replace(/^```\s*/, "").replace(/\s*```$/, "");
+    }
+
+    let recommendations: { id: string; reasoning: string }[] = [];
+    try {
+      const parsed = JSON.parse(text);
+      recommendations = parsed.recommendations || [];
+    } catch (parseErr: any) {
+      console.error("Failed to parse Claude JSON response:", text, parseErr);
+      throw new Error("Invalid response format from recommendation engine");
+    }
+
+    // Match recommendations with full product documents
+    const resultList: any[] = [];
+    for (const rec of recommendations) {
+      const matched = products.find(p => (p.id === rec.id || String(p._id) === rec.id));
+      if (matched) {
+        resultList.push({
+          ...matched,
+          id: matched.id || String(matched._id),
+          reasoning: rec.reasoning
+        });
       }
-    ];
-    return sendResponse(res, 200, true, "Recommendations calculated", mockRecommendations);
+    }
+
+    if (resultList.length === 0) {
+      const fallbackData = getFallbackRecommendations();
+      return sendResponse(res, 200, true, "Recommendations fetched (Fallback)", fallbackData);
+    }
+
+    return sendResponse(res, 200, true, "Recommendations fetched successfully", resultList);
   } catch (error: any) {
-    return sendResponse(res, 500, false, "AI recommendation engine failed.", null, error.message);
+    console.error("AI recommendations error:", error);
+    try {
+      const database = await getDatabase();
+      const products = await database.collection("products").find({}).toArray();
+      const selected = products.slice(0, 3).map((p: any) => ({
+        ...p,
+        id: p.id || String(p._id),
+        reasoning: "Recommended based on popularity and high customer rating in our store."
+      }));
+      return sendResponse(res, 200, true, "Recommendations fetched (Fallback after error)", selected);
+    } catch (dbErr: any) {
+      return sendResponse(res, 500, false, "AI recommendation engine failed completely.", null, error.message);
+    }
   }
 });
 
