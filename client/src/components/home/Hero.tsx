@@ -77,7 +77,7 @@ export default function Hero() {
           </Link>
           <Link
             href="/about"
-            className="rounded-xl border border-bg-secondary bg-background px-6 py-3.5 text-sm font-semibold text-text-neutral hover:bg-bg-secondary transition-all"
+            className="rounded-xl border border-border bg-card px-6 py-3.5 text-sm font-semibold text-text-neutral hover:bg-surface transition-all"
           >
             How it works
           </Link>
@@ -85,8 +85,8 @@ export default function Hero() {
       </div>
 
       {/* Interactive Element Column (AI Sandbox Preview) */}
-      <div className="flex-1 w-full max-w-md rounded-2xl border border-bg-secondary bg-background/80 backdrop-blur-md p-6 shadow-xl relative transition-all hover:shadow-2xl">
-        <div className="flex items-center gap-2 pb-4 border-b border-bg-secondary">
+      <div className="flex-1 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl relative transition-all hover:shadow-2xl">
+        <div className="flex items-center gap-2 pb-4 border-b border-border">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary">
             <RiRobot2Line className="h-4.5 w-4.5" />
           </div>
@@ -109,8 +109,8 @@ export default function Hero() {
               <div
                 className={`max-w-[85%] rounded-2xl px-3.5 py-2 leading-relaxed ${
                   m.sender === "user"
-                    ? "bg-primary text-white rounded-tr-none font-medium"
-                    : "bg-bg-secondary text-text-neutral/80 rounded-tl-none border border-bg-secondary"
+                    ? "bg-primary text-white rounded-tr-none font-semibold"
+                    : "bg-surface text-text-neutral/80 rounded-tl-none border border-border"
                 }`}
               >
                 {m.text}
@@ -119,7 +119,7 @@ export default function Hero() {
           ))}
           {isTyping && (
             <div className="flex justify-start">
-              <div className="rounded-2xl rounded-tl-none bg-bg-secondary border border-bg-secondary px-3.5 py-2">
+              <div className="rounded-2xl rounded-tl-none bg-surface border border-border px-3.5 py-2">
                 <div className="flex gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-text-neutral/30 animate-bounce" />
                   <span className="h-1.5 w-1.5 rounded-full bg-text-neutral/30 animate-bounce [animation-delay:0.2s]" />
@@ -139,7 +139,7 @@ export default function Hero() {
                 key={idx}
                 onClick={() => handleSend(s)}
                 disabled={isTyping}
-                className="text-[10px] text-left font-semibold border border-bg-secondary bg-bg-secondary/40 hover:bg-primary/5 hover:border-primary/30 hover:text-primary rounded-xl px-2.5 py-1.5 transition-all text-text-neutral/70"
+                className="text-[10px] text-left font-semibold border border-border bg-surface hover:bg-primary/5 hover:border-primary/30 hover:text-primary rounded-xl px-2.5 py-1.5 transition-all text-text-neutral/75"
               >
                 {s}
               </button>
@@ -155,7 +155,7 @@ export default function Hero() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend(query)}
             placeholder="Ask your assistant here..."
-            className="flex-1 text-xs rounded-xl border border-bg-secondary bg-background px-3 py-2 focus:border-primary focus:outline-none transition-all"
+            className="flex-1 text-xs rounded-xl border border-border bg-surface px-3 py-2.5 focus:border-primary focus:bg-card focus:outline-none transition-all"
             disabled={isTyping}
           />
           <button
