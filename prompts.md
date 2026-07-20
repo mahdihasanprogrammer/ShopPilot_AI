@@ -223,7 +223,7 @@ You are a Senior Full Stack Developer. Follow `PRD.md` §5.7 and §8 (payment en
 
 You are a Senior AI Integration Engineer. Follow `PRD.md` §6 (Feature 1) carefully — this must demonstrate real agentic reasoning, not simple text generation.
 
-**Backend:** `POST /api/ai/recommendations` route handler (added into `index.ts` per PRD §9) — gathers user's order history, cart, and pre-filtered candidate products from MongoDB *before* calling Claude; asks Claude for 3–5 product IDs + reasoning in strict JSON; handles parse/API errors gracefully.
+**Backend:** `POST /api/ai/recommendations` route handler (added into `index.ts` per PRD §9) — gathers user's order history, cart, and pre-filtered candidate products from MongoDB *before* calling the AI; uses **LangChain (`@langchain/google-genai`) with Gemini 2.5 Flash** to get 3–5 product IDs + reasoning in strict JSON (use LangChain's structured output/JSON output parser); handles parse/API errors gracefully.
 
 **Frontend:** Recommendations section (Dashboard + Home) showing products with AI reasoning, refinement input that re-triggers the call, loading/error states.
 
@@ -235,7 +235,7 @@ You are a Senior AI Integration Engineer. Follow `PRD.md` §6 (Feature 1) carefu
 
 You are a Senior AI Integration Engineer. Follow `PRD.md` §6 (Feature 2) carefully — must maintain memory, resolve follow-up references, and use application context.
 
-**Backend:** `POST /api/ai/chat` route handler (added into `index.ts` per PRD §9) — loads conversation history from `chat_history` collection, injects current product context if provided, streams the Claude response, saves the exchange after streaming, generates 2–3 follow-up prompt suggestions.
+**Backend:** `POST /api/ai/chat` route handler (added into `index.ts` per PRD §9) — loads conversation history from `chat_history` collection, injects current product context if provided, streams the response using **LangChain (`@langchain/google-genai`) with Gemini 2.5 Flash** (`.stream()`), saves the exchange after streaming, generates 2–3 follow-up prompt suggestions.
 
 **Frontend:** Floating `ChatWidget` (site-wide) — message bubbles, typing indicator, streaming consumption, follow-up prompt chips, `conversationId` persisted in session state, auto-passes `currentProductId` from Product Details pages. Responds in the user's language (Bengali/English).
 
@@ -267,7 +267,7 @@ Go through every page built in Prompts 04–13 and 16, replace any remaining pla
 - [ ] Admin Dashboard — real Recharts data, real orders table
 - [ ] Admin: Add/Manage Products, Manage Orders — real persistence and status updates
 - [ ] Checkout — real Stripe test flow end-to-end
-- [ ] AI Recommendation + Chat — real Claude calls
+- [ ] AI Recommendation + Chat — real LangChain/Gemini calls
 - [ ] Contact — real submission
 - [ ] Route protection — verify blocked at both frontend guard AND backend middleware
 

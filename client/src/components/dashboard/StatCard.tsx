@@ -11,17 +11,17 @@ interface StatCardProps {
 
 export default function StatCard({ title, value, icon: Icon, color = "text-primary" }: StatCardProps) {
   return (
-    <div className="card-premium p-7 flex items-center justify-between">
+    <div className="rounded-2xl border border-border bg-card p-6 flex items-center justify-between shadow-sm hover:shadow-md hover:border-border-hover transition-all duration-200">
       <div className="space-y-1.5">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-text-neutral/40">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted">
           {title}
         </p>
-        <p className="text-3xl font-black text-text-neutral tracking-tight">
+        <p className="text-3xl font-black text-heading tracking-tight">
           {value}
         </p>
       </div>
-      <div className={`p-3.5 rounded-2xl bg-black/[0.02] ${color}`}>
-        <Icon className="h-5.5 w-5.5" />
+      <div className={`p-3.5 rounded-2xl bg-surface border border-border ${color}`}>
+        <Icon className="h-6 w-6" />
       </div>
     </div>
   );
