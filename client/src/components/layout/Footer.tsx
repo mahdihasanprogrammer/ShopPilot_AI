@@ -17,10 +17,10 @@ export default function Footer() {
   return (
     <footer className="bg-footer-bg text-gray-300 border-t border-white/[0.08] mt-auto">
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-        
+
         {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          
+
           {/* Logo & Description */}
           <div className="space-y-5">
             <Link href="/" className="flex items-center gap-2 shrink-0">
@@ -34,7 +34,7 @@ export default function Footer() {
             <p className="text-xs text-gray-400 leading-relaxed font-semibold">
               Empowering smart buying flows using modern Generative AI. Explore, compare, and order catalog candidates in one click.
             </p>
-            
+
             {/* High-contrast Social Links */}
             <div className="flex items-center gap-4 pt-2">
               <a
