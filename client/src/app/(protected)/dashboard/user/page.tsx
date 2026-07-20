@@ -19,18 +19,29 @@ export default function UserDashboardPage() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
-    async function fetchUserOrders() {
+    async function fetchUserData() {
       setLoadingOrders(true);
-      const res = await api.get<Order[]>("/orders");
-      if (res.success && res.data) {
-        setOrders(res.data);
+
+      // Fetch orders
+      const ordersRes = await api.get<Order[]>("/orders");
+      if (ordersRes.success && ordersRes.data) {
+        setOrders(ordersRes.data);
       }
+
+      // Fetch cart count from DB (single source of truth)
+      const cartRes = await api.get<{ items: { qty: number }[] }>("/cart");
+      if (cartRes.success && cartRes.data?.items) {
+        const count = cartRes.data.items.reduce((sum: number, item: { qty: number }) => sum + (item.qty || 1), 0);
+        setCartCount(count);
+      }
+
       setLoadingOrders(false);
     }
     if (session?.user) {
-      fetchUserOrders();
+      fetchUserData();
     }
   }, [session]);
 
@@ -101,14 +112,14 @@ export default function UserDashboardPage() {
           color="text-primary"
         />
         <StatCard
-          title="My Wishlist"
-          value={0} // placeholder wishlist count
+          title="Items Bought"
+          value={orders.reduce((sum, o) => sum + (o.items?.reduce((s, i) => s + (i.qty || 1), 0) || 0), 0)}
           icon={FiHeart}
           color="text-rose-500"
         />
         <StatCard
           title="Cart Items"
-          value={0} // placeholder cart items count
+          value={cartCount}
           icon={FiShoppingCart}
           color="text-accent"
         />

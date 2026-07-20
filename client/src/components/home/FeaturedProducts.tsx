@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Product } from "@/types";
 import ProductCard from "../shared/ProductCard";
 import SkeletonLoader from "../shared/SkeletonLoader";
+import { api } from "@/lib/api";
 
 const MOCK_PRODUCTS: Product[] = [
   {
@@ -93,12 +94,18 @@ export default function FeaturedProducts() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate real API fetching
-    const timer = setTimeout(() => {
-      setProducts(MOCK_PRODUCTS);
+    async function loadFeatured() {
+      setLoading(true);
+      const res = await api.get<{ products: Product[] }>("/products?limit=8");
+      if (res.success && res.data && res.data.products?.length > 0) {
+        setProducts(res.data.products);
+      } else {
+        // Fallback to mock data if catalog is empty or fetch fails
+        setProducts(MOCK_PRODUCTS);
+      }
       setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    }
+    loadFeatured();
   }, []);
 
   return (

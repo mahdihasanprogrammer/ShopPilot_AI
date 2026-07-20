@@ -255,7 +255,11 @@ export default function ProductDetailsPage({
           </div>
 
           {/* AI Summary Highlight */}
-          <AISummaryCard title={product.title} category={product.category} />
+          <AISummaryCard
+            title={product.title}
+            category={product.category}
+            description={product.shortDescription || product.fullDescription}
+          />
         </div>
       </div>
 
