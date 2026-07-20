@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient, Db, ObjectId } from "mongodb";
 import Stripe from "stripe";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 // Load environment variables
 dotenv.config();
@@ -676,123 +678,130 @@ app.post("/api/cart", requireAuth, async (req: Request, res: Response) => {
 
 // ---- Agentic AI Routes ----
 
+// Initialise Gemini model via LangChain (lazy — only used when routes are called)
+function getGeminiModel() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === "PASTE_YOUR_GEMINI_API_KEY_HERE") {
+    return null;
+  }
+  return new ChatGoogleGenerativeAI({
+    model: "gemini-2.5-flash",
+    apiKey,
+    temperature: 0.3,
+    maxOutputTokens: 1500,
+  });
+}
+
 app.post("/api/ai/recommendations", requireAuth, async (req: Request, res: Response) => {
   try {
     const database = await getDatabase();
     const userId = req.user!.id;
     const { prompt = "" } = req.body;
 
-    // 1. Gather user context: Order history
+    // ── Step 1: Gather user context — order history ──
     const orders = await database.collection("orders").find({ userId }).toArray();
-    const orderSummary = orders.map(o => ({
+    const orderSummary = orders.map((o: any) => ({
       date: o.createdAt,
-      items: o.items.map((i: any) => ({ title: i.title, price: i.price, qty: i.qty }))
+      items: (o.items || []).map((i: any) => ({ title: i.title, price: i.price, qty: i.qty }))
     }));
 
-    // 2. Gather user context: Cart items
+    // ── Step 2: Gather user context — cart items ──
     const cart = await database.collection("carts").findOne({ userId });
-    const cartItems = cart?.items || [];
+    const cartItems = (cart?.items || []) as any[];
 
-    // 3. Gather candidates products from database
+    // ── Step 3: Build product candidate list (max 30 to stay within token budget) ──
     const products = await database.collection("products").find({}).toArray();
-    const candidates = products.map((p: any) => ({
-      id: p.id || String(p._id),
-      title: p.title,
-      category: p.category,
-      price: p.price,
-      brand: p.brand || "",
-      shortDescription: p.shortDescription || "",
-      stock: p.stock !== undefined ? p.stock : 10
-    })).slice(0, 30); // Limiting candidates to avoid exceeding Claude token limits
+    const candidates = products
+      .filter((p: any) => p.stock === undefined || p.stock > 0)
+      .map((p: any) => ({
+        id: p.id || String(p._id),
+        title: p.title,
+        category: p.category || "",
+        price: p.price,
+        brand: p.brand || "",
+        shortDescription: p.shortDescription || "",
+      }))
+      .slice(0, 30);
 
-    // Fallback products in case Claude API is not configured or fails
-    const getFallbackRecommendations = () => {
-      const selected = products.slice(0, 3);
-      return selected.map((p: any) => ({
+    // ── Fallback: return top-3 catalog items with generic reasoning ──
+    const getFallbackRecommendations = () =>
+      products.slice(0, 3).map((p: any) => ({
         ...p,
         id: p.id || String(p._id),
-        reasoning: "Recommended based on popularity and high customer rating in our store."
+        reasoning: "Recommended based on popularity and high customer satisfaction in our store."
       }));
-    };
 
-    const apiKey = process.env.CLAUDE_API_KEY;
-    if (!apiKey || apiKey === "your-claude-api-key") {
-      console.warn("CLAUDE_API_KEY is not configured or is placeholder. Using fallback engine.");
-      const fallbackData = getFallbackRecommendations();
-      return sendResponse(res, 200, true, "Recommendations fetched (Fallback)", fallbackData);
+    // ── Step 4: Try LangChain + Gemini 2.5 Flash ──
+    const model = getGeminiModel();
+    if (!model) {
+      console.warn("GEMINI_API_KEY not configured — using fallback recommendations.");
+      return sendResponse(res, 200, true, "Recommendations fetched (Fallback)", getFallbackRecommendations());
     }
 
-    // 4. Construct prompt for Claude messages API
-    const systemPrompt = `You are a personalized shopping recommendation agent for the ShopPilot store.
-Analyze the user's order history, current cart items, and any optional refinement query.
-Select 3 to 5 products from the candidate list that are most relevant to recommend to this user.
-Provide a unique, customized reasoning sentence explaining why each product is recommended based on their context.
-Your response must be strict, valid JSON matching the following schema. Return ONLY the raw JSON block, with no explanation or introductory text:
+    const systemPrompt = `You are a personalized shopping recommendation agent for the ShopPilot e-commerce store.
+You will be given:
+  - The user's full order history
+  - The items currently in the user's cart
+  - An optional refinement query from the user (e.g. "budget under $50", "only electronics")
+  - A list of candidate products (with id, title, category, price, brand, shortDescription)
+
+Your task:
+  1. Select exactly 3 to 5 products from the candidate list that best suit this specific user.
+  2. For each selected product write one personalized reasoning sentence explaining WHY it suits this user based on their history, cart, or refinement query.
+  3. Return ONLY a raw JSON object with no markdown fences, no extra text, matching this exact schema:
+
 {
   "recommendations": [
-    { "id": "product_id_value", "reasoning": "custom reasoning explanation" }
+    { "id": "<product_id>", "reasoning": "<personalized explanation>" }
   ]
 }`;
 
-    const userPrompt = `
-### User Order History
+    const userPrompt = `### User Order History
 ${JSON.stringify(orderSummary, null, 2)}
 
 ### User Current Cart
-${JSON.stringify(cartItems, null, 2)}
+${JSON.stringify(cartItems.map((i: any) => ({ title: i.title, price: i.price, qty: i.qty })), null, 2)}
 
-### Optional Filter/Refinement Query
+### Optional Refinement Query
 "${prompt}"
 
 ### Candidate Products
-${JSON.stringify(candidates, null, 2)}
+${JSON.stringify(candidates, null, 2)}`;
 
-Please return the best 3-5 recommendations from the Candidate Products in raw JSON format.`;
+    // Invoke Gemini via LangChain
+    const aiResponse = await model.invoke([
+      new SystemMessage(systemPrompt),
+      new HumanMessage(userPrompt)
+    ]);
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        model: process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022",
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [
-          { role: "user", content: userPrompt }
-        ]
-      })
-    });
+    // Extract text content from LangChain response
+    let rawText = typeof aiResponse.content === "string"
+      ? aiResponse.content.trim()
+      : JSON.stringify(aiResponse.content);
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Claude API call failed:", response.status, errText);
-      throw new Error(`Claude API returned status ${response.status}`);
-    }
+    // Strip markdown code fences if the model returned them
+    rawText = rawText
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
 
-    const data: any = await response.json();
-    let text = data.content?.[0]?.text?.trim() || "";
-
-    // Clean up markdown formatting if Claude returned it
-    if (text.startsWith("```")) {
-      text = text.replace(/^```json\s*/, "").replace(/^```\s*/, "").replace(/\s*```$/, "");
-    }
-
-    let recommendations: { id: string; reasoning: string }[] = [];
+    // ── Step 5: Parse structured JSON output ──
+    let recs: { id: string; reasoning: string }[] = [];
     try {
-      const parsed = JSON.parse(text);
-      recommendations = parsed.recommendations || [];
+      const parsed = JSON.parse(rawText);
+      recs = Array.isArray(parsed.recommendations) ? parsed.recommendations : [];
     } catch (parseErr: any) {
-      console.error("Failed to parse Claude JSON response:", text, parseErr);
-      throw new Error("Invalid response format from recommendation engine");
+      console.error("[Recommendations] JSON parse error:", parseErr.message, "| Raw:", rawText.slice(0, 200));
+      return sendResponse(res, 200, true, "Recommendations fetched (Fallback)", getFallbackRecommendations());
     }
 
-    // Match recommendations with full product documents
+    // ── Step 6: Match AI-selected IDs back to full product documents ──
     const resultList: any[] = [];
-    for (const rec of recommendations) {
-      const matched = products.find(p => (p.id === rec.id || String(p._id) === rec.id));
+    for (const rec of recs) {
+      const matched = products.find(
+        (p: any) => p.id === rec.id || String(p._id) === rec.id
+      );
       if (matched) {
         resultList.push({
           ...matched,
@@ -803,31 +812,30 @@ Please return the best 3-5 recommendations from the Candidate Products in raw JS
     }
 
     if (resultList.length === 0) {
-      const fallbackData = getFallbackRecommendations();
-      return sendResponse(res, 200, true, "Recommendations fetched (Fallback)", fallbackData);
+      return sendResponse(res, 200, true, "Recommendations fetched (Fallback)", getFallbackRecommendations());
     }
 
-    return sendResponse(res, 200, true, "Recommendations fetched successfully", resultList);
+    return sendResponse(res, 200, true, "Recommendations generated by Gemini 2.5 Flash", resultList);
   } catch (error: any) {
-    console.error("AI recommendations error:", error);
+    console.error("[Recommendations] Unexpected error:", error.message);
     try {
-      const database = await getDatabase();
-      const products = await database.collection("products").find({}).toArray();
-      const selected = products.slice(0, 3).map((p: any) => ({
+      const database2 = await getDatabase();
+      const products2 = await database2.collection("products").find({}).toArray();
+      const selected = products2.slice(0, 3).map((p: any) => ({
         ...p,
         id: p.id || String(p._id),
-        reasoning: "Recommended based on popularity and high customer rating in our store."
+        reasoning: "Recommended based on popularity and high customer satisfaction in our store."
       }));
       return sendResponse(res, 200, true, "Recommendations fetched (Fallback after error)", selected);
-    } catch (dbErr: any) {
-      return sendResponse(res, 500, false, "AI recommendation engine failed completely.", null, error.message);
+    } catch {
+      return sendResponse(res, 500, false, "Recommendation engine failed.", null, error.message);
     }
   }
 });
 
 app.post("/api/ai/chat", requireAuth, async (req: Request, res: Response) => {
   try {
-    return sendResponse(res, 200, true, "Chat endpoint initialized. Stream will connect here.");
+    return sendResponse(res, 200, true, "Chat endpoint initialized. Streaming will connect here.");
   } catch (error: any) {
     return sendResponse(res, 500, false, "AI chat assistant failed.", null, error.message);
   }

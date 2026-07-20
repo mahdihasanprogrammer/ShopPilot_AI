@@ -24,7 +24,7 @@
 - Better Auth — token/session verify backend middleware দিয়ে
 - Architecture: **Single-file** — কোনো MVC/separate Model-Controller-Route ফোল্ডার স্ট্রাকচার না
 - Entry point: **একটাই `index.ts`** — সব route, সব logic (DB connection, route handlers, middleware) এই একটা ফাইলেই থাকবে
-- AI Provider: Claude API (Anthropic)
+- AI Provider: **Gemini 2.5 Flash via LangChain** (`@langchain/google-genai`)
 - Payment: Stripe (Test Mode)
 - Deployment: **Vercel** — both frontend and backend
 
@@ -155,8 +155,8 @@ About: platform story, AI assistant explanation. Contact: form (name/email/messa
 ## 6. Agentic AI Features (2 Required)
 
 ### Feature 1 — Smart Recommendation Engine
-- Backend actively gathers context (order history, cart, filtered product candidates) **before** calling Claude — this is the agentic part, not just prompt-passthrough
-- Claude reasons over that context, returns 3–5 product IDs + reasoning, strict JSON output
+- Backend actively gathers context (order history, cart, filtered product candidates) **before** calling the AI (LangChain + Gemini 2.5 Flash) — this is the agentic part, not just prompt-passthrough
+- The model reasons over that context, returns 3–5 product IDs + reasoning, strict JSON output (use LangChain's structured output / JSON parser)
 - Frontend: recommendations section with reasoning shown per product, refinement input (e.g. budget constraint) re-triggers the call
 
 ### Feature 2 — Conversational Shopping Assistant
