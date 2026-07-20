@@ -13,8 +13,25 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Enable CORS
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:3000",
+  "http://localhost:5173",
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:3000",
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      origin.startsWith("http://localhost:") ||
+      origin.endsWith(".vercel.app") ||
+      allowedOrigins.includes(origin)
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
   credentials: true
 }));
 
@@ -26,13 +43,19 @@ const DATABASE_NAME = process.env.DATABASE_NAME || "shoppilot_db";
 const client = new MongoClient(MONGODB_URI);
 const db = client.db(DATABASE_NAME);
 
+let isConnected = false;
 async function getDatabase(): Promise<Db> {
+  if (!isConnected) {
+    await client.connect();
+    isConnected = true;
+  }
   return db;
 }
 
-// Connect to MongoDB and seed demo users
+// Connect to MongoDB
 client.connect()
   .then(() => {
+    isConnected = true;
     console.log(`Connected to MongoDB: ${DATABASE_NAME}`);
   })
   .catch((err) => console.error("MongoDB connection failed:", err));
@@ -1185,3 +1208,4 @@ if (process.env.NODE_ENV !== "production") {
 
 // Export app for Vercel Serverless environment
 export default app;
+module.exports = app;
