@@ -9,10 +9,10 @@ interface SortDropdownProps {
 }
 
 const SORT_OPTIONS = [
-  { label: "Newest Arrivals",   sortBy: "createdAt", order: "desc" },
-  { label: "Price: Low → High", sortBy: "price",     order: "asc"  },
-  { label: "Price: High → Low", sortBy: "price",     order: "desc" },
-  { label: "Highest Rated",     sortBy: "rating",    order: "desc" },
+  { label: "Newest Arrivals", sortBy: "createdAt", order: "desc" },
+  { label: "Price: Low to High", sortBy: "price", order: "asc" },
+  { label: "Price: High to Low", sortBy: "price", order: "desc" },
+  { label: "High Rating", sortBy: "rating", order: "desc" },
 ];
 
 export default function SortDropdown({ sortBy, order, onSortChange }: SortDropdownProps) {
@@ -25,14 +25,14 @@ export default function SortDropdown({ sortBy, order, onSortChange }: SortDropdo
 
   return (
     <div className="flex items-center gap-2">
-      <FiTrendingUp className="h-4 w-4 text-muted shrink-0" />
-      <span className="text-xs text-muted font-medium whitespace-nowrap hidden sm:block">
-        Sort by:
+      <FiTrendingUp className="h-4 w-4 text-text-neutral/40" />
+      <span className="text-xs text-text-neutral/50 font-medium whitespace-nowrap">
+        Sort By:
       </span>
       <select
         value={selectedValue}
         onChange={handleChange}
-        className="rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-heading focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 hover:border-border-hover transition-all shadow-sm cursor-pointer"
+        className="rounded-xl border border-bg-secondary bg-background px-3 py-1.5 text-xs font-semibold text-text-neutral focus:border-primary focus:outline-none transition-all shadow-sm"
       >
         {SORT_OPTIONS.map((o) => (
           <option key={`${o.sortBy}:${o.order}`} value={`${o.sortBy}:${o.order}`}>
