@@ -15,6 +15,7 @@ import SkeletonLoader from "@/components/shared/SkeletonLoader";
 import { RiArrowLeftLine, RiShoppingCartLine, RiWallet2Line, RiStarFill, RiChat3Line, RiErrorWarningLine, RiCheckLine } from "react-icons/ri";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { getCategoryBadgeStyles } from "@/lib/categories";
 
 export default function ProductDetailsPage({
   params,
@@ -170,7 +171,7 @@ export default function ProductDetailsPage({
         {/* Right Info Column */}
         <div className="space-y-6">
           <div className="space-y-2">
-            <span className="text-xs text-accent font-bold uppercase tracking-wider">
+            <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getCategoryBadgeStyles(product.category)}`}>
               {product.category}
             </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-text-neutral leading-tight">

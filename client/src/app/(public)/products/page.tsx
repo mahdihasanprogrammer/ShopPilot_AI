@@ -218,12 +218,12 @@ function ProductsExploreContent() {
         ) : (
           <div className="space-y-6">
             {/* Highly Polished Statistics Pill Badge */}
-            <div className="flex items-center justify-start">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-bold text-heading shadow-xs">
+            <div className="flex items-center justify-start pt-2 pb-1">
+              <div className="inline-flex items-center gap-2.5 rounded-xl border border-border bg-card px-4 py-2 text-xs font-bold text-heading shadow-xs hover:border-border-hover transition-all">
                 <FiGrid className="h-4 w-4 text-primary animate-pulse" />
-                <span>
-                  Showing <span className="text-primary">{products.length}</span> of{" "}
-                  <span className="text-primary">{totalProducts}</span> Products
+                <span className="text-body font-semibold">
+                  Showing <span className="text-primary font-extrabold">{products.length}</span> of{" "}
+                  <span className="text-primary font-extrabold">{totalProducts}</span> Products
                 </span>
               </div>
             </div>

@@ -76,16 +76,16 @@ export default function AdminDashboardPage() {
 
   if (sessionPending || loadingStats) {
     return (
-      <main className="flex-1 px-6 py-12 sm:px-8 lg:px-12 max-w-7xl mx-auto w-full space-y-8 animate-pulse">
-        <div className="h-8 w-48 bg-bg-secondary rounded-lg"></div>
+      <main className="flex-1 px-6 py-12 sm:px-8 lg:px-12 max-w-7xl mx-auto w-full space-y-8">
+        <div className="skeleton h-8 w-48 rounded-xl" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 bg-bg-secondary rounded-2xl"></div>
+            <div key={i} className="skeleton h-24 rounded-2xl" />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="h-64 bg-bg-secondary rounded-2xl"></div>
-          <div className="h-64 bg-bg-secondary rounded-2xl"></div>
+          <div className="skeleton h-64 rounded-2xl" />
+          <div className="skeleton h-64 rounded-2xl" />
         </div>
       </main>
     );
@@ -98,16 +98,18 @@ export default function AdminDashboardPage() {
   const totalUsersCount = new Set(orders.map((o) => o.userId)).size || 1; // Distinct customers count
 
   return (
-    <main className="flex-1 px-6 py-12 sm:px-8 lg:px-12 max-w-7xl mx-auto w-full space-y-10">
+    <main className="flex-1 px-6 py-10 sm:px-8 lg:px-12 max-w-7xl mx-auto w-full space-y-8">
       {/* Welcome & Admin Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-bg-secondary pb-6">
+      <div className="rounded-2xl border border-border bg-card shadow-sm px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-text-neutral flex items-center gap-2">
-            <RiShieldUserLine className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl font-extrabold tracking-tight text-heading flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <RiShieldUserLine className="h-5 w-5 text-primary" />
+            </div>
             Admin Overview
           </h1>
-          <p className="text-sm text-text-neutral/60 mt-1">
-            Evaluate platform performance, monitor revenue, and update orders status.
+          <p className="text-sm text-body/70 mt-1 ml-11">
+            Monitor revenue, track orders, and manage your product catalogue.
           </p>
         </div>
 
@@ -115,7 +117,7 @@ export default function AdminDashboardPage() {
         <div className="flex flex-wrap gap-2.5">
           <button
             onClick={() => router.push("/dashboard/admin/manage-products")}
-            className="flex items-center gap-1.5 rounded-xl border border-bg-secondary bg-background px-4 py-2.5 text-xs font-semibold text-text-neutral hover:bg-bg-secondary transition-all"
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-2.5 text-xs font-semibold text-heading hover:border-border-hover hover:bg-background transition-all"
           >
             <FiGrid className="h-4 w-4" />
             Manage Items
@@ -131,30 +133,34 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Metrics Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Total Products"
           value={totalProducts}
           icon={FiLayers}
           color="text-primary"
+          bgColor="bg-primary/10"
         />
         <StatCard
           title="Total Orders"
           value={orders.length}
           icon={FiShoppingBag}
-          color="text-accent"
+          color="text-orange-500"
+          bgColor="bg-orange-500/10"
         />
         <StatCard
           title="Total Revenue"
-          value={`$${totalRevenue.toFixed(2)}`}
+          value={`$${totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={FiDollarSign}
-          color="text-emerald-500"
+          color="text-emerald-600"
+          bgColor="bg-emerald-500/10"
         />
         <StatCard
-          title="Total Customers"
+          title="Unique Customers"
           value={totalUsersCount}
           icon={FiUsers}
-          color="text-amber-500"
+          color="text-amber-600"
+          bgColor="bg-amber-500/10"
         />
       </div>
 
@@ -169,14 +175,14 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Global Orders Manager Section */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-text-neutral">Global Transactions Manager</h3>
+          <h3 className="text-base font-extrabold text-heading tracking-tight">Recent Orders</h3>
           <button
             onClick={() => router.push("/dashboard/admin/manage-orders")}
-            className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+            className="flex items-center gap-1 text-xs font-bold text-primary hover:text-primary-dark transition-colors"
           >
-            View all orders
+            View all
             <FiArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>

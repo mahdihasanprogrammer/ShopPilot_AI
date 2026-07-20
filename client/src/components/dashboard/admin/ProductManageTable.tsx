@@ -21,6 +21,7 @@ import {
   FiFilter,
 } from "react-icons/fi";
 import { toast } from "sonner";
+import { getCategoryBadgeStyles } from "@/lib/categories";
 
 // ---- Helpers ----
 
@@ -81,12 +82,12 @@ function DeleteModal({ product, onConfirm, onCancel, isDeleting }: DeleteModalPr
         if (e.target === e.currentTarget && !isDeleting) onCancel();
       }}
     >
-      <div className="relative w-full max-w-md rounded-2xl border border-bg-secondary bg-background p-8 shadow-2xl space-y-6 animate-scaleIn">
+      <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-2xl space-y-6 animate-scaleIn">
         {/* Close button */}
         <button
           onClick={onCancel}
           disabled={isDeleting}
-          className="absolute top-4 right-4 rounded-lg p-1.5 text-text-neutral/40 hover:text-text-neutral hover:bg-bg-secondary transition-all disabled:opacity-40"
+          className="absolute top-4 right-4 rounded-lg p-1.5 text-body/40 hover:text-heading hover:bg-surface transition-all disabled:opacity-40"
           aria-label="Close dialog"
         >
           <FiX className="h-4 w-4" />
@@ -111,23 +112,28 @@ function DeleteModal({ product, onConfirm, onCancel, isDeleting }: DeleteModalPr
         </div>
 
         {/* Product preview */}
-        <div className="flex items-center gap-3 rounded-xl border border-bg-secondary bg-bg-secondary/30 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
           {product.images?.[0] ? (
             <img
               src={product.images[0]}
               alt={product.title}
-              className="h-10 w-10 rounded-lg object-cover border border-bg-secondary shrink-0"
+              className="h-10 w-10 rounded-lg object-cover border border-border shrink-0"
             />
           ) : (
-            <div className="h-10 w-10 rounded-lg bg-bg-secondary flex items-center justify-center shrink-0">
-              <FiPackage className="h-5 w-5 text-text-neutral/30" />
+            <div className="h-10 w-10 rounded-lg bg-surface flex items-center justify-center shrink-0">
+              <FiPackage className="h-5 w-5 text-body/30" />
             </div>
           )}
           <div className="min-w-0">
             <p className="text-sm font-bold text-text-neutral truncate">{product.title}</p>
-            <p className="text-xs text-text-neutral/50 truncate">
-              {product.category} &middot; ${product.price.toFixed(2)}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${getCategoryBadgeStyles(product.category)}`}>
+                {product.category}
+              </span>
+              <span className="text-[10px] text-text-neutral/40 font-bold">
+                ${product.price.toFixed(2)}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -152,7 +158,7 @@ function DeleteModal({ product, onConfirm, onCancel, isDeleting }: DeleteModalPr
             ref={cancelRef}
             onClick={onCancel}
             disabled={isDeleting}
-            className="flex-1 rounded-xl border border-bg-secondary bg-background px-4 py-2.5 text-sm font-semibold text-text-neutral hover:bg-bg-secondary transition-all disabled:opacity-60"
+            className="flex-1 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-heading hover:bg-background transition-all disabled:opacity-60"
           >
             Cancel
           </button>
@@ -165,27 +171,27 @@ function DeleteModal({ product, onConfirm, onCancel, isDeleting }: DeleteModalPr
 // ---- Skeleton Row ----
 function SkeletonRow() {
   return (
-    <tr className="border-b border-bg-secondary/50 animate-pulse">
+    <tr className="border-b border-border">
       <td className="px-4 py-4">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-bg-secondary shrink-0" />
+          <div className="skeleton h-10 w-10 rounded-xl shrink-0" />
           <div className="space-y-1.5">
-            <div className="h-3 w-36 rounded bg-bg-secondary" />
-            <div className="h-2.5 w-24 rounded bg-bg-secondary" />
+            <div className="skeleton h-3 w-36 rounded-full" />
+            <div className="skeleton h-2.5 w-24 rounded-full" />
           </div>
         </div>
       </td>
       <td className="px-4 py-4">
-        <div className="h-5 w-20 rounded-full bg-bg-secondary" />
+        <div className="skeleton h-5 w-20 rounded-full" />
       </td>
       <td className="px-4 py-4">
-        <div className="h-3.5 w-16 rounded bg-bg-secondary" />
+        <div className="skeleton h-3.5 w-16 rounded-lg" />
       </td>
       <td className="px-4 py-4">
-        <div className="h-3.5 w-12 rounded bg-bg-secondary" />
+        <div className="skeleton h-3.5 w-12 rounded-lg" />
       </td>
       <td className="px-4 py-4 text-right">
-        <div className="h-8 w-24 rounded-lg bg-bg-secondary ml-auto" />
+        <div className="skeleton h-8 w-24 rounded-lg ml-auto" />
       </td>
     </tr>
   );
@@ -291,22 +297,22 @@ export default function ProductManageTable({ isAdmin, userId }: ProductManageTab
       )}
 
       {/* Toolbar: search + refresh */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-4 rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-neutral/30" />
+          <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-body/40" />
           <input
             id="product-manage-search"
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by title, category&hellip;"
-            className="w-full rounded-xl border border-bg-secondary bg-background pl-10 pr-4 py-2.5 text-sm font-medium text-text-neutral placeholder:text-text-neutral/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder="Search by title, category…"
+            className="w-full rounded-xl border border-border bg-surface pl-10 pr-4 py-2.5 text-sm font-medium text-heading placeholder:text-body/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-neutral/30 hover:text-text-neutral transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-body/30 hover:text-heading transition-colors"
               aria-label="Clear search"
             >
               <FiX className="h-3.5 w-3.5" />
@@ -317,7 +323,7 @@ export default function ProductManageTable({ isAdmin, userId }: ProductManageTab
         {/* Count + Refresh */}
         <div className="flex items-center gap-3">
           {!loading && !error && (
-            <span className="text-xs text-text-neutral/50 font-medium hidden sm:block">
+            <span className="text-xs text-body/60 font-medium hidden sm:block">
               {filtered.length} product{filtered.length !== 1 ? "s" : ""}
               {search ? ` for "${search}"` : ""}
             </span>
@@ -326,7 +332,7 @@ export default function ProductManageTable({ isAdmin, userId }: ProductManageTab
             onClick={fetchProducts}
             disabled={loading}
             title="Refresh products"
-            className="flex items-center gap-1.5 rounded-xl border border-bg-secondary bg-background px-3.5 py-2.5 text-xs font-bold text-text-neutral/60 hover:text-primary hover:bg-bg-secondary transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-xs font-bold text-body hover:text-primary hover:border-border-hover transition-all disabled:opacity-50"
           >
             <FiRefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Refresh</span>
@@ -335,7 +341,7 @@ export default function ProductManageTable({ isAdmin, userId }: ProductManageTab
       </div>
 
       {/* Table card */}
-      <div className="rounded-2xl border border-bg-secondary bg-background overflow-hidden shadow-sm">
+      <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
         {loading ? (
           /* Skeleton */
           <table className="w-full text-xs text-left">
@@ -446,7 +452,7 @@ export default function ProductManageTable({ isAdmin, userId }: ProductManageTab
 function TableHead({ isAdmin }: { isAdmin: boolean }) {
   return (
     <thead>
-      <tr className="bg-bg-secondary/40 border-b border-bg-secondary text-text-neutral/50 font-bold uppercase tracking-wider text-[10px]">
+      <tr className="bg-surface border-b border-border text-body/60 font-bold uppercase tracking-wider text-[10px]">
         <th className="px-4 py-3.5">Product</th>
         <th className="px-4 py-3.5">Category</th>
         <th className="px-4 py-3.5">Price</th>
@@ -476,7 +482,7 @@ function ProductRow({ product: p, isAdmin, onView, onEdit, onDelete }: ProductRo
     : "—";
 
   return (
-    <tr className="border-b border-bg-secondary/50 last:border-b-0 hover:bg-bg-secondary/10 transition-colors group">
+    <tr className="border-b border-border last:border-b-0 hover:bg-surface transition-colors group">
       {/* Product info */}
       <td className="px-4 py-4">
         <div className="flex items-center gap-3">
@@ -502,7 +508,7 @@ function ProductRow({ product: p, isAdmin, onView, onEdit, onDelete }: ProductRo
 
       {/* Category badge */}
       <td className="px-4 py-4">
-        <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
+        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getCategoryBadgeStyles(p.category)}`}>
           {p.category}
         </span>
       </td>

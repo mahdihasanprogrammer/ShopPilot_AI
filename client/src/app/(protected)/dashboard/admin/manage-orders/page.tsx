@@ -129,31 +129,31 @@ export default function ManageOrdersPage() {
 
       {/* Stats Summary strip */}
       {!loading && !error && orders.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="rounded-2xl border border-bg-secondary bg-background p-5 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-text-neutral/50">Total Processing Value</p>
-              <p className="text-2xl font-black text-text-neutral mt-0.5">${totalSales.toFixed(2)}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm flex items-center justify-between gap-3 hover:shadow-md hover:border-border-hover transition-all">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-body/50">Total Revenue</p>
+              <p className="text-2xl font-extrabold text-emerald-600 mt-0.5 truncate">${totalSales.toFixed(2)}</p>
             </div>
-            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-500">
+            <div className="shrink-0 p-3 rounded-xl bg-emerald-500/10 text-emerald-600">
               <FiTrendingUp className="h-5 w-5" />
             </div>
           </div>
-          <div className="rounded-2xl border border-bg-secondary bg-background p-5 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-text-neutral/50">Pending Fulfillment</p>
-              <p className="text-2xl font-black text-amber-600 mt-0.5">{pendingCount} order{pendingCount !== 1 ? "s" : ""}</p>
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm flex items-center justify-between gap-3 hover:shadow-md hover:border-border-hover transition-all">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-body/50">Pending Fulfillment</p>
+              <p className="text-2xl font-extrabold text-amber-600 mt-0.5">{pendingCount} order{pendingCount !== 1 ? "s" : ""}</p>
             </div>
-            <div className="p-3 rounded-xl bg-amber-50 text-amber-500">
+            <div className="shrink-0 p-3 rounded-xl bg-amber-500/10 text-amber-600">
               <FiClock className="h-5 w-5" />
             </div>
           </div>
-          <div className="rounded-2xl border border-bg-secondary bg-background p-5 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-text-neutral/50">Delivered & Closed</p>
-              <p className="text-2xl font-black text-purple-600 mt-0.5">{completedCount} order{completedCount !== 1 ? "s" : ""}</p>
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm flex items-center justify-between gap-3 hover:shadow-md hover:border-border-hover transition-all">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-body/50">Delivered & Closed</p>
+              <p className="text-2xl font-extrabold text-purple-600 mt-0.5">{completedCount} order{completedCount !== 1 ? "s" : ""}</p>
             </div>
-            <div className="p-3 rounded-xl bg-purple-50 text-purple-500">
+            <div className="shrink-0 p-3 rounded-xl bg-purple-500/10 text-purple-600">
               <FiTruck className="h-5 w-5" />
             </div>
           </div>
@@ -161,22 +161,22 @@ export default function ManageOrdersPage() {
       )}
 
       {/* Filter and search toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
         <div className="relative flex-1 max-w-sm">
-          <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-neutral/30" />
+          <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-body/40" />
           <input
             id="order-search"
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search Order ID, Customer, or Product..."
-            className="w-full rounded-xl border border-bg-secondary bg-background pl-10 pr-4 py-2.5 text-sm font-medium text-text-neutral placeholder:text-text-neutral/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder="Search Order ID, Customer, Status..."
+            className="w-full rounded-xl border border-border bg-surface pl-10 pr-4 py-2.5 text-sm font-medium text-heading placeholder:text-body/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
         </div>
         <button
           onClick={fetchOrders}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl border border-bg-secondary bg-background px-4 py-2.5 text-xs font-bold text-text-neutral/60 hover:text-primary hover:bg-bg-secondary transition-all disabled:opacity-50 self-start sm:self-auto"
+          className="flex items-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-2.5 text-xs font-bold text-body hover:text-primary hover:border-border-hover transition-all disabled:opacity-50 self-start sm:self-auto"
         >
           <FiRefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -184,7 +184,7 @@ export default function ManageOrdersPage() {
       </div>
 
       {/* Table grid */}
-      <div className="rounded-2xl border border-bg-secondary bg-background overflow-hidden shadow-sm">
+      <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
         {loading ? (
           <div className="p-16 flex flex-col items-center justify-center gap-2">
             <FiLoader className="h-8 w-8 animate-spin text-primary" />

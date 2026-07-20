@@ -36,18 +36,18 @@ export default function AdminOrdersTable({ orders, onStatusUpdate }: AdminOrders
 
   if (orders.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-bg-secondary p-8 text-center text-text-neutral/50 text-xs font-semibold bg-background animate-fadeIn">
+      <div className="rounded-2xl border border-dashed border-border p-8 text-center text-body/50 text-xs font-semibold bg-card">
         No orders have been placed on the platform yet.
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-bg-secondary bg-background overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+    <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
       <div className="overflow-x-auto">
         <table className="w-full text-xs text-left">
           <thead>
-            <tr className="bg-bg-secondary/40 border-b border-bg-secondary text-text-neutral/50 font-bold uppercase tracking-wider">
+            <tr className="bg-surface border-b border-border text-body/60 font-bold uppercase tracking-wider text-[10px]">
               <th className="px-6 py-3.5">Order ID</th>
               <th className="px-6 py-3.5">User ID</th>
               <th className="px-6 py-3.5">Date</th>
@@ -63,7 +63,7 @@ export default function AdminOrdersTable({ orders, onStatusUpdate }: AdminOrders
               const formattedUserId = userId ? String(userId).slice(-6).toUpperCase() : "N/A";
               const isUpdating = updatingId === orderId;
               return (
-                <tr key={orderId} className="border-b border-bg-secondary/50 last:border-b-0 hover:bg-bg-secondary/10 transition-colors">
+                <tr key={orderId} className="border-b border-border last:border-b-0 hover:bg-surface transition-colors">
                   <td className="px-6 py-4 font-mono text-text-neutral font-semibold">
                     #{formattedOrderId}
                   </td>
@@ -82,7 +82,7 @@ export default function AdminOrdersTable({ orders, onStatusUpdate }: AdminOrders
                       value={o.status}
                       disabled={isUpdating}
                       onChange={(e) => handleStatusChange(orderId, e.target.value as Order["status"])}
-                      className={`rounded-xl border border-bg-secondary bg-background px-3 py-1.5 text-xs font-bold text-text-neutral focus:border-primary focus:outline-none transition-all shadow-sm ${
+                      className={`rounded-xl border border-border bg-surface px-3 py-1.5 text-xs font-bold focus:border-primary focus:outline-none transition-all shadow-sm ${
                         o.status === "delivered" ? "text-purple-600 border-purple-200" :
                         o.status === "shipped" ? "text-blue-600 border-blue-200" :
                         o.status === "paid" ? "text-green-600 border-green-200" :

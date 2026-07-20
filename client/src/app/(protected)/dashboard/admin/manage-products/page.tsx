@@ -40,16 +40,16 @@ export default function ManageProductsPage() {
       </nav>
 
       {/* ── Page header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-bg-secondary pb-6">
+      <div className="rounded-2xl border border-border bg-card shadow-sm px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-2xl bg-primary/10">
             <FiLayers className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-text-neutral">
+            <h1 className="text-xl font-extrabold tracking-tight text-heading">
               Manage Products
             </h1>
-            <p className="text-xs text-text-neutral/50 font-medium mt-0.5">
+            <p className="text-xs text-body/60 font-medium mt-0.5">
               {isAdmin
                 ? "View, edit, or delete any product in the catalogue."
                 : "View and edit your own listed products."}
@@ -70,30 +70,30 @@ export default function ManageProductsPage() {
       {session && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Role badge */}
-          <div className="flex items-center gap-3 rounded-2xl border border-bg-secondary bg-background px-5 py-4 shadow-sm">
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card px-5 py-4 shadow-sm hover:border-border-hover transition-all">
             <div className="p-2.5 rounded-xl bg-primary/10">
               <FiPackage className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-text-neutral/50">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-body/50">
                 Viewing as
               </p>
-              <p className="text-sm font-extrabold text-text-neutral capitalize">
+              <p className="text-sm font-extrabold text-heading capitalize">
                 {session.user?.role ?? "user"}
               </p>
             </div>
           </div>
 
           {/* Scope info */}
-          <div className="flex items-center gap-3 rounded-2xl border border-bg-secondary bg-background px-5 py-4 shadow-sm">
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card px-5 py-4 shadow-sm hover:border-border-hover transition-all">
             <div className="p-2.5 rounded-xl bg-accent/10">
               <FiLayers className="h-5 w-5 text-accent" />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-text-neutral/50">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-body/50">
                 Catalogue Scope
               </p>
-              <p className="text-sm font-extrabold text-text-neutral">
+              <p className="text-sm font-extrabold text-heading">
                 {isAdmin ? "All Products" : "Your Products Only"}
               </p>
             </div>

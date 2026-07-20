@@ -7,21 +7,30 @@ interface StatCardProps {
   value: number | string;
   icon: IconType;
   color?: string;
+  bgColor?: string;
 }
 
-export default function StatCard({ title, value, icon: Icon, color = "text-primary" }: StatCardProps) {
+export default function StatCard({
+  title,
+  value,
+  icon: Icon,
+  color = "text-primary",
+  bgColor = "bg-primary/10",
+}: StatCardProps) {
   return (
-    <div className="card-premium p-7 flex items-center justify-between">
-      <div className="space-y-1.5">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-text-neutral/40">
+    <div className="rounded-2xl border border-border bg-card shadow-sm p-5 flex items-center justify-between gap-3 hover:shadow-md hover:border-border-hover transition-all">
+      {/* Text block */}
+      <div className="space-y-1 min-w-0 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-body/50 truncate">
           {title}
         </p>
-        <p className="text-3xl font-black text-text-neutral tracking-tight">
+        <p className={`text-2xl font-extrabold tracking-tight truncate ${color}`}>
           {value}
         </p>
       </div>
-      <div className={`p-3.5 rounded-2xl bg-black/[0.02] ${color}`}>
-        <Icon className="h-5.5 w-5.5" />
+      {/* Icon block */}
+      <div className={`shrink-0 p-3 rounded-xl ${bgColor} ${color}`}>
+        <Icon className="h-5 w-5" />
       </div>
     </div>
   );

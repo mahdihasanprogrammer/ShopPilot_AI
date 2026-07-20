@@ -12,6 +12,8 @@ import { MdStar } from "react-icons/md";
 import { FiEye, FiCheck } from "react-icons/fi";
 import { toast } from "sonner";
 
+import { getCategoryBadgeStyles } from "@/lib/categories";
+
 interface ProductCardProps {
   product: Product;
 }
@@ -78,7 +80,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
 
           {/* Category badge */}
-          <span className="absolute top-2.5 left-2.5 rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent shadow-sm">
+          <span className={`absolute top-2.5 left-2.5 rounded-full border px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shadow-xs backdrop-blur-md ${getCategoryBadgeStyles(product.category)}`}>
             {product.category}
           </span>
         </div>
