@@ -1054,7 +1054,12 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 // Local Development Server Listener
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiStatus = geminiKey && geminiKey !== "PASTE_YOUR_GEMINI_API_KEY_HERE"
+      ? `✓ loaded (${geminiKey.slice(0, 6)}...${geminiKey.slice(-4)})`
+      : "✗ MISSING — AI features will be disabled";
     console.log(`Server is running in local development mode on: http://localhost:${PORT}`);
+    console.log(`[ENV] GEMINI_API_KEY: ${geminiStatus}`);
   });
 }
 
