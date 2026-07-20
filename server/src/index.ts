@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { MongoClient, Db, ObjectId } from "mongodb";
 import Stripe from "stripe";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages";
 
 // Load environment variables
 dotenv.config();
@@ -834,10 +834,150 @@ ${JSON.stringify(candidates, null, 2)}`;
 });
 
 app.post("/api/ai/chat", requireAuth, async (req: Request, res: Response) => {
+  // Set SSE Headers
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no"); // Disable buffering for proxy/Vercel
+
   try {
-    return sendResponse(res, 200, true, "Chat endpoint initialized. Streaming will connect here.");
+    const database = await getDatabase();
+    const userId = req.user!.id;
+    const { message, conversationId, currentProductId } = req.body;
+
+    if (!message || !conversationId) {
+      res.write(`data: ${JSON.stringify({ error: "Message and conversationId are required." })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // 1. Gather context: Load chat history from MongoDB
+    const chatHistory = await database.collection("chat_history").findOne({ userId, conversationId });
+    const messages = chatHistory?.messages || [];
+
+    // 2. Gather context: Fetch current viewed product info if on details page
+    let productContext = "";
+    if (currentProductId) {
+      const product = await database.collection("products").findOne({
+        $or: [{ id: currentProductId }, { _id: new ObjectId(currentProductId) }]
+      });
+      if (product) {
+        productContext = `The user is currently viewing this product in the store:
+Title: ${product.title}
+Price: $${product.price}
+Category: ${product.category}
+Brand: ${product.brand || "N/A"}
+Stock: ${product.stock !== undefined ? product.stock : "Available"}
+Description: ${product.shortDescription || product.fullDescription || ""}`;
+      }
+    }
+
+    // 3. Gather context: Get general product list catalog (up to 15 items) for reference
+    const catalog = await database.collection("products").find({}).limit(15).toArray();
+    const catalogContext = catalog
+      .map(p => `- ${p.title} [Brand: ${p.brand || "N/A"}, Price: $${p.price}, ID: ${p.id || String(p._id)}]`)
+      .join("\n");
+
+    // 4. Construct System Instruction
+    const systemPrompt = `You are ShopPilot's helpful, intelligent, and friendly e-commerce assistant.
+Help the user find items, suggest recommendations, answer store questions, and assist with checkout.
+Respond in the language that the user writes in (English or Bengali). Be polite and professional.
+
+${productContext ? `### Current Product Context:\n${productContext}\n` : ""}
+### Shop Catalog Candidates:
+${catalogContext}
+
+### Memory & Conversational Rules:
+- Refer to prior message history to resolve follow-ups (e.g. if the user previously asked about a phone and then asks "কোনটা ভালো" or "which is better", identify which products are being compared from the history).
+- Recommend products using markdown links in this format: [Product Title](/products/product_id).
+- Keep answers helpful and direct.`;
+
+    // 5. Construct LangChain messages sequence
+    const chatMessages: (SystemMessage | HumanMessage | AIMessage)[] = [
+      new SystemMessage(systemPrompt)
+    ];
+
+    // Load message history from DB
+    for (const msg of messages) {
+      if (msg.role === "user") {
+        chatMessages.push(new HumanMessage(msg.content));
+      } else if (msg.role === "assistant") {
+        chatMessages.push(new AIMessage(msg.content));
+      }
+    }
+
+    // Append new user message
+    chatMessages.push(new HumanMessage(message));
+
+    // 6. Invoke Gemini model stream
+    const model = getGeminiModel();
+    if (!model) {
+      res.write(`data: ${JSON.stringify({ error: "Gemini AI is not configured. Add GEMINI_API_KEY to server/.env." })}\n\n`);
+      res.end();
+      return;
+    }
+
+    const stream = await model.stream(chatMessages);
+    let fullReply = "";
+
+    for await (const chunk of stream) {
+      const content = chunk.content;
+      if (content) {
+        const textChunk = typeof content === "string" ? content : JSON.stringify(content);
+        fullReply += textChunk;
+        res.write(`data: ${JSON.stringify({ text: textChunk })}\n\n`);
+      }
+    }
+
+    // 7. Generate follow-up suggestions using the Gemini model in a quick single invocation
+    let suggestions: string[] = [];
+    try {
+      const suggestionPrompt = `Based on the latest user query: "${message}" and the assistant's reply: "${fullReply}", generate exactly 2 or 3 short, interactive follow-up questions a shopper might click next. Return them as a raw, single-line JSON array of strings ONLY. Example: ["Is it in stock?", "Show similar items", "What is the shipping cost?"]. Do not write markdown code blocks or explanations.`;
+      const suggestionResponse = await model.invoke(suggestionPrompt);
+      let sugText = typeof suggestionResponse.content === "string" ? suggestionResponse.content.trim() : JSON.stringify(suggestionResponse.content);
+      
+      sugText = sugText
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+        
+      suggestions = JSON.parse(sugText);
+    } catch (err) {
+      console.warn("Failed to generate follow-up suggestions:", err);
+      // Sensible default suggestions fallback
+      suggestions = ["Show more products", "What is the return policy?", "Is there free shipping?"];
+    }
+
+    // Send suggestions and close stream
+    res.write(`data: ${JSON.stringify({ suggestions, conversationId })}\n\n`);
+    res.write("event: end\ndata: \n\n");
+    res.end();
+
+    // 8. Save updated chat history in MongoDB database
+    const updatedMessages = [
+      ...messages,
+      { role: "user", content: message, timestamp: new Date() },
+      { role: "assistant", content: fullReply, timestamp: new Date() }
+    ];
+
+    await database.collection("chat_history").updateOne(
+      { userId, conversationId },
+      {
+        $set: {
+          messages: updatedMessages,
+          updatedAt: new Date()
+        },
+        $setOnInsert: {
+          createdAt: new Date()
+        }
+      },
+      { upsert: true }
+    );
   } catch (error: any) {
-    return sendResponse(res, 500, false, "AI chat assistant failed.", null, error.message);
+    console.error("AI chat assistant error:", error);
+    res.write(`data: ${JSON.stringify({ error: "AI assistant encountered an error: " + error.message })}\n\n`);
+    res.end();
   }
 });
 
