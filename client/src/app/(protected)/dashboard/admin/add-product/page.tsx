@@ -40,7 +40,7 @@ export default function AddProductPage() {
       </div>
 
       {/* Form card */}
-      <div className="rounded-2xl border border-bg-secondary bg-background shadow-sm p-8">
+      <div className="rounded-3xl border border-border bg-card shadow-md p-6 sm:p-10">
         <AddProductForm />
       </div>
     </main>

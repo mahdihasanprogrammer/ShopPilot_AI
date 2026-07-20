@@ -7,10 +7,10 @@ import { Product } from "@/types";
 import ProductCard from "@/components/shared/ProductCard";
 import SkeletonLoader from "@/components/shared/SkeletonLoader";
 import SearchBar from "@/components/products/SearchBar";
-import FilterPanel from "@/components/products/FilterPanel";
 import SortDropdown from "@/components/products/SortDropdown";
 import Pagination from "@/components/products/Pagination";
 import { MdInbox, MdWarning } from "react-icons/md";
+import { FiGrid } from "react-icons/fi";
 
 function ProductsExploreContent() {
   const router = useRouter();
@@ -117,78 +117,131 @@ function ProductsExploreContent() {
 
   return (
     <div className="space-y-6">
-      {/* Search and Sort Header */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="w-full md:max-w-xl">
-          <SearchBar initialValue={search} onSearch={handleSearch} />
-        </div>
-        <SortDropdown sortBy={sortBy} order={order} onSortChange={handleSortChange} />
-      </div>
+      {/* ── Search, Filters, and Sort Toolbar Card ── */}
+      <div className="card-elevated p-4 md:p-5 bg-card border border-border shadow-sm rounded-2xl space-y-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+          {/* Search Field */}
+          <div className="w-full lg:max-w-md shrink-0">
+            <SearchBar initialValue={search} onSearch={handleSearch} />
+          </div>
+          
+          {/* Filters and Sorting Controls */}
+          <div className="w-full flex flex-wrap lg:flex-nowrap gap-3 items-center justify-end">
+            
+            {/* Category Selector */}
+            <select
+              value={category}
+              onChange={(e) => handleFilterChange({ category: e.target.value })}
+              className="rounded-xl border border-border bg-surface hover:bg-card px-3.5 py-2.5 text-xs font-bold text-heading focus:border-primary focus:outline-none transition-all cursor-pointer"
+            >
+              <option value="">All Categories</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Fashion">Fashion</option>
+              <option value="Home & Kitchen">Home & Kitchen</option>
+              <option value="Sports">Sports</option>
+              <option value="Books">Books</option>
+              <option value="Beauty">Beauty</option>
+              <option value="Accessories">Accessories</option>
+            </select>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        {/* Left Filters Panel */}
-        <div className="lg:col-span-1">
-          <FilterPanel
-            category={category}
-            minPrice={minPrice}
-            maxPrice={maxPrice}
-            onFilterChange={handleFilterChange}
-            onClear={handleClearFilters}
-          />
-        </div>
-
-        {/* Right Product Grid */}
-        <div className="lg:col-span-3">
-          {error ? (
-            <div className="flex flex-col items-center justify-center p-12 border border-red-100 bg-red-50/50 rounded-2xl text-red-600 gap-2">
-              <MdWarning className="h-10 w-10 shrink-0" />
-              <p className="font-bold text-sm">Failed to Load Products</p>
-              <p className="text-xs text-red-500/80">{error}</p>
-              <button
-                onClick={fetchProducts}
-                className="mt-2 rounded-xl bg-red-600 text-white px-4 py-2 text-xs font-semibold hover:bg-red-700 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          ) : loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <SkeletonLoader key={i} />
-              ))}
-            </div>
-          ) : products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-16 border border-bg-secondary bg-background rounded-2xl text-text-neutral/40 gap-3">
-              <MdInbox className="h-12 w-12" />
-              <p className="font-semibold text-sm">No Products Found</p>
-              <p className="text-xs text-text-neutral/50 max-w-xs text-center">
-                We couldn't find any products matching your query parameters. Try widening your price ranges or clear filters.
-              </p>
-              <button
-                onClick={handleClearFilters}
-                className="mt-2 rounded-xl border border-bg-secondary bg-background hover:bg-bg-secondary px-4 py-2 text-xs font-semibold text-text-neutral transition-all"
-              >
-                Clear Search & Filters
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="text-xs font-semibold text-text-neutral/40 uppercase tracking-wider mb-2">
-                Showing {products.length} of {totalProducts} Products
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
-              </div>
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
+            {/* Price Range inputs wrapper */}
+            <div className="flex items-center gap-1.5 border border-border bg-surface rounded-xl px-3 py-2 text-xs">
+              <span className="text-[10px] font-bold text-body/50 uppercase tracking-wider">Price ($)</span>
+              <input
+                type="number"
+                placeholder="Min"
+                value={minPrice}
+                onChange={(e) => handleFilterChange({ minPrice: e.target.value })}
+                className="w-12 bg-transparent text-xs font-bold text-heading focus:outline-none"
+              />
+              <span className="text-border">|</span>
+              <input
+                type="number"
+                placeholder="Max"
+                value={maxPrice}
+                onChange={(e) => handleFilterChange({ maxPrice: e.target.value })}
+                className="w-12 bg-transparent text-xs font-bold text-heading focus:outline-none"
               />
             </div>
-          )}
+
+            {/* Sorting Dropdown selector */}
+            <SortDropdown sortBy={sortBy} order={order} onSortChange={handleSortChange} />
+
+            {/* Clear Button */}
+            {(category || minPrice || maxPrice || search) && (
+              <button
+                onClick={handleClearFilters}
+                className="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-xl px-4 py-2.5 transition-all cursor-pointer border border-transparent hover:border-red-200"
+              >
+                Clear
+              </button>
+            )}
+
+          </div>
         </div>
+      </div>
+
+      {/* ── Product Grid Section ── */}
+      <div>
+        {error ? (
+          <div className="flex flex-col items-center justify-center p-12 border border-red-100 bg-red-50/50 rounded-2xl text-red-600 gap-2">
+            <MdWarning className="h-10 w-10 shrink-0" />
+            <p className="font-bold text-sm">Failed to Load Products</p>
+            <p className="text-xs text-red-500/80">{error}</p>
+            <button
+              onClick={fetchProducts}
+              className="mt-2 rounded-xl bg-red-600 text-white px-4 py-2 text-xs font-semibold hover:bg-red-700 transition-colors cursor-pointer"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <SkeletonLoader key={i} />
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-16 border border-border bg-card rounded-2xl text-heading/40 gap-3 shadow-xs">
+            <MdInbox className="h-12 w-12" />
+            <p className="font-bold text-sm">No Products Found</p>
+            <p className="text-xs text-body/70 max-w-xs text-center">
+              We couldn't find any products matching your query parameters. Try widening your price ranges or clear filters.
+            </p>
+            <button
+              onClick={handleClearFilters}
+              className="mt-2 rounded-xl border border-border bg-card hover:bg-surface px-4 py-2.5 text-xs font-bold text-heading transition-all cursor-pointer"
+            >
+              Clear Search & Filters
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Highly Polished Statistics Pill Badge */}
+            <div className="flex items-center justify-start">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-bold text-heading shadow-xs">
+                <FiGrid className="h-4 w-4 text-primary animate-pulse" />
+                <span>
+                  Showing <span className="text-primary">{products.length}</span> of{" "}
+                  <span className="text-primary">{totalProducts}</span> Products
+                </span>
+              </div>
+            </div>
+
+            {/* Main grid (Full-width, 4 cols on lg screens since sidebar is removed) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {products.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -198,10 +251,10 @@ export default function ProductsExplorePage() {
   return (
     <main className="flex-1 px-6 py-12 sm:px-8 lg:px-12 max-w-7xl mx-auto w-full">
       <div className="mb-8 space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight text-text-neutral">
+        <h1 className="text-3xl font-extrabold tracking-tight text-heading">
           Explore Products
         </h1>
-        <p className="text-sm text-text-neutral/60">
+        <p className="text-sm text-body font-medium">
           Find matching items or ask our AI Shopping Companion for real-time recommendations.
         </p>
       </div>
@@ -209,10 +262,10 @@ export default function ProductsExplorePage() {
       <Suspense
         fallback={
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 animate-pulse">
-            <div className="h-64 rounded-2xl bg-bg-secondary"></div>
+            <div className="h-64 rounded-2xl bg-border"></div>
             <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-80 rounded-2xl bg-bg-secondary"></div>
+                <div key={i} className="h-80 rounded-2xl bg-border"></div>
               ))}
             </div>
           </div>

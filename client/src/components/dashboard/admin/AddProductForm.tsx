@@ -200,8 +200,8 @@ export default function AddProductForm() {
   };
 
   const inputBase =
-    "w-full rounded-xl border bg-background px-4 py-3 text-sm font-medium text-text-neutral placeholder:text-text-neutral/30 focus:outline-none focus:ring-2 transition-all";
-  const inputNormal = `${inputBase} border-bg-secondary focus:border-primary focus:ring-primary/20`;
+    "w-full rounded-xl border bg-card px-4 py-3 text-sm font-semibold text-heading placeholder:text-muted focus:outline-none focus:ring-2 transition-all";
+  const inputNormal = `${inputBase} border-border focus:border-primary focus:ring-primary/10`;
   const inputError = `${inputBase} border-red-300 focus:border-red-400 focus:ring-red-200`;
 
   return (
@@ -314,7 +314,7 @@ export default function AddProductForm() {
         <button
           type="button"
           onClick={() => router.push("/dashboard/admin/manage-products")}
-          className="rounded-xl border border-bg-secondary bg-background px-6 py-3 text-sm font-semibold text-text-neutral hover:bg-bg-secondary transition-all cursor-pointer"
+          className="rounded-xl border border-border bg-card px-6 py-3 text-sm font-semibold text-heading hover:bg-surface transition-all cursor-pointer"
         >
           Cancel
         </button>
