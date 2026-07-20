@@ -379,13 +379,13 @@ export default function ProductManageTable({ isAdmin, userId }: ProductManageTab
             <table className="w-full text-xs text-left">
               <TableHead isAdmin={isAdmin} />
               <tbody>
-                {paginated.map((p) => (
+                {paginated.map((p, idx) => (
                   <ProductRow
-                    key={p.id}
+                    key={p.id || (p as any)._id || idx}
                     product={p}
                     isAdmin={isAdmin}
-                    onView={() => router.push(`/products/${p.id}`)}
-                    onEdit={() => router.push(`/dashboard/admin/edit-product/${p.id}`)}
+                    onView={() => router.push(`/products/${p.id || (p as any)._id}`)}
+                    onEdit={() => router.push(`/dashboard/admin/edit-product/${p.id || (p as any)._id}`)}
                     onDelete={() => setDeleteTarget(p)}
                   />
                 ))}

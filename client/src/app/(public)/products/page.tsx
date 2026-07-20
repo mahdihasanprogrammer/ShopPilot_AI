@@ -228,10 +228,9 @@ function ProductsExploreContent() {
               </div>
             </div>
 
-            {/* Main grid (Full-width, 4 cols on lg screens since sidebar is removed) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {products.map((p) => (
-                <ProductCard key={p.id} product={p} />
+              {products.map((p, idx) => (
+                <ProductCard key={p.id || (p as any)._id || idx} product={p} />
               ))}
             </div>
 
