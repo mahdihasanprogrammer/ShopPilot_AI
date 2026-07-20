@@ -61,6 +61,13 @@ export default function ChatWidget() {
     }
   }, []);
 
+  // Listen for the open-chat-widget CustomEvent dispatched by teaser buttons (e.g. Hero)
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener("open-chat-widget", handleOpen);
+    return () => window.removeEventListener("open-chat-widget", handleOpen);
+  }, []);
+
   // Detect current viewed product ID from path (e.g. /products/123)
   const productDetailsMatch = pathname.match(/^\/products\/([a-zA-Z0-9_\-]+)$/);
   const currentProductId = productDetailsMatch ? productDetailsMatch[1] : undefined;

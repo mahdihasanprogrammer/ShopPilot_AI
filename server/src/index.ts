@@ -676,6 +676,29 @@ app.post("/api/cart", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+// ---- Product View Tracking ----
+
+// Fire-and-forget: records that a logged-in user viewed this product.
+// Used by /api/ai/recommendations to factor in recently viewed items.
+app.post("/api/products/:id/view", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const database = await getDatabase();
+    const userId = req.user!.id;
+    const productId = req.params.id;
+
+    await database.collection("product_views").updateOne(
+      { userId, productId },
+      { $set: { userId, productId, viewedAt: new Date() } },
+      { upsert: true }
+    );
+
+    return sendResponse(res, 200, true, "View recorded");
+  } catch (error: any) {
+    // Non-critical — don't expose errors to client
+    return sendResponse(res, 200, true, "View recorded");
+  }
+});
+
 // ---- Agentic AI Routes ----
 
 // Initialise Gemini model via LangChain (lazy — only used when routes are called)
@@ -692,11 +715,61 @@ function getGeminiModel() {
   });
 }
 
+// Dev toggle — set AI_MOCK_MODE=true in server/.env to skip real Gemini calls instantly
+const AI_MOCK_MODE = process.env.AI_MOCK_MODE === "true";
+
+/**
+ * Wraps a Gemini call with automatic retry on 429 / RESOURCE_EXHAUSTED.
+ * On second failure (or non-rate-limit errors) throws a sanitized friendly message.
+ */
+async function callGeminiWithRetry<T>(
+  fn: () => Promise<T>,
+  retries = 1,
+  delayMs = 2000
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    const msg = err?.message || "";
+    const isRateLimit =
+      err?.status === 429 ||
+      msg.includes("429") ||
+      msg.includes("RESOURCE_EXHAUSTED") ||
+      msg.toLowerCase().includes("quota");
+
+    if (isRateLimit && retries > 0) {
+      console.warn(`[Gemini] Rate limited. Retrying in ${delayMs}ms... (${retries} left)`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return callGeminiWithRetry(fn, retries - 1, delayMs);
+    }
+
+    // Always log the real error server-side
+    console.error("[Gemini] Error:", msg);
+
+    if (isRateLimit) {
+      throw new Error("AI is temporarily busy. Please try again in a moment.");
+    }
+    throw new Error("AI service encountered an error. Please try again.");
+  }
+}
+
 app.post("/api/ai/recommendations", requireAuth, async (req: Request, res: Response) => {
   try {
     const database = await getDatabase();
     const userId = req.user!.id;
     const { prompt = "" } = req.body;
+
+    // ── Mock mode shortcut (dev only) ──
+    if (AI_MOCK_MODE) {
+      const mockDb = await getDatabase();
+      const mockProds = await mockDb.collection("products").find({}).limit(3).toArray();
+      const mockRecs = mockProds.map((p: any) => ({
+        ...p,
+        id: p.id || String(p._id),
+        reasoning: "[Mock Mode] This is a static recommendation. Set AI_MOCK_MODE=false to use real Gemini AI."
+      }));
+      return sendResponse(res, 200, true, "Recommendations (Mock Mode)", mockRecs);
+    }
 
     // ── Step 1: Gather user context — order history ──
     const orders = await database.collection("orders").find({ userId }).toArray();
@@ -708,6 +781,31 @@ app.post("/api/ai/recommendations", requireAuth, async (req: Request, res: Respo
     // ── Step 2: Gather user context — cart items ──
     const cart = await database.collection("carts").findOne({ userId });
     const cartItems = (cart?.items || []) as any[];
+
+    // ── Step 2b: Gather recently viewed products (last 10, newest first) ──
+    const recentViews = await database.collection("product_views")
+      .find({ userId })
+      .sort({ viewedAt: -1 })
+      .limit(10)
+      .toArray();
+    const viewedProductIds = recentViews.map((v: any) => v.productId);
+    const viewedProducts = viewedProductIds.length > 0
+      ? await database.collection("products").find({
+          $or: viewedProductIds.map((pid: string) => [
+            { id: pid },
+            ...(pid.length === 24 ? [{ _id: new ObjectId(pid) }] : [])
+          ].flat())
+        }).toArray()
+      : [];
+    const viewedContext = viewedProducts
+      .map((p: any) => `- ${p.title} [Category: ${p.category || "N/A"}, Price: $${p.price}]`)
+      .join("\n");
+
+    // ── Step 2c: Parse budget/category hints from the free-text prompt ──
+    const budgetMatch = prompt.match(/under\s*\$?(\d+(\.\d+)?)|\$?(\d+(\.\d+)?)\s*(or\s*less|max|budget)/i);
+    const budgetCap = budgetMatch ? parseFloat(budgetMatch[1] || budgetMatch[3]) : null;
+    const categoryHints = ["electronics", "fashion", "fitness", "home-decor", "beauty", "sports", "books"]
+      .filter(cat => prompt.toLowerCase().includes(cat));
 
     // ── Step 3: Build product candidate list (max 30 to stay within token budget) ──
     const products = await database.collection("products").find({}).toArray();
@@ -742,12 +840,15 @@ app.post("/api/ai/recommendations", requireAuth, async (req: Request, res: Respo
 You will be given:
   - The user's full order history
   - The items currently in the user's cart
+  - Recently viewed products by this user
   - An optional refinement query from the user (e.g. "budget under $50", "only electronics")
   - A list of candidate products (with id, title, category, price, brand, shortDescription)
 
 Your task:
   1. Select exactly 3 to 5 products from the candidate list that best suit this specific user.
-  2. For each selected product write one personalized reasoning sentence explaining WHY it suits this user based on their history, cart, or refinement query.
+${budgetCap ? `  IMPORTANT: Only select products priced at or below $${budgetCap}.\n` : ""}
+${categoryHints.length > 0 ? `  IMPORTANT: Prefer products in these categories: ${categoryHints.join(", ")}.\n` : ""}
+  2. For each selected product write one personalized reasoning sentence explaining WHY it suits this user based on their history, viewed products, cart, or refinement query.
   3. Return ONLY a raw JSON object with no markdown fences, no extra text, matching this exact schema:
 
 {
@@ -762,17 +863,22 @@ ${JSON.stringify(orderSummary, null, 2)}
 ### User Current Cart
 ${JSON.stringify(cartItems.map((i: any) => ({ title: i.title, price: i.price, qty: i.qty })), null, 2)}
 
+### Recently Viewed Products
+${viewedContext || "(None recorded yet)"}
+
 ### Optional Refinement Query
 "${prompt}"
 
 ### Candidate Products
 ${JSON.stringify(candidates, null, 2)}`;
 
-    // Invoke Gemini via LangChain
-    const aiResponse = await model.invoke([
-      new SystemMessage(systemPrompt),
-      new HumanMessage(userPrompt)
-    ]);
+    // Invoke Gemini via LangChain (with retry on 429)
+    const aiResponse = await callGeminiWithRetry(() =>
+      model.invoke([
+        new SystemMessage(systemPrompt),
+        new HumanMessage(userPrompt)
+      ])
+    );
 
     // Extract text content from LangChain response
     let rawText = typeof aiResponse.content === "string"
@@ -917,7 +1023,16 @@ ${catalogContext}
       return;
     }
 
-    const stream = await model.stream(chatMessages);
+    // Mock mode — instant static reply, no real API call
+    if (AI_MOCK_MODE) {
+      res.write(`data: ${JSON.stringify({ text: "🤖 [Mock Mode] AI_MOCK_MODE is enabled. Set AI_MOCK_MODE=false in server/.env to use real Gemini responses." })}\n\n`);
+      res.write(`data: ${JSON.stringify({ suggestions: ["Show popular products", "What are the best deals?", "Help me find a gift"] })}\n\n`);
+      res.write("event: end\ndata: \n\n");
+      res.end();
+      return;
+    }
+
+    const stream = await callGeminiWithRetry(() => model.stream(chatMessages));
     let fullReply = "";
 
     for await (const chunk of stream) {
@@ -976,7 +1091,10 @@ ${catalogContext}
     );
   } catch (error: any) {
     console.error("AI chat assistant error:", error);
-    res.write(`data: ${JSON.stringify({ error: "AI assistant encountered an error: " + error.message })}\n\n`);
+    const friendlyMsg = (error.message || "").startsWith("AI ")
+      ? error.message
+      : "AI assistant encountered an error. Please try again.";
+    res.write(`data: ${JSON.stringify({ error: friendlyMsg })}\n\n`);
     res.end();
   }
 });
@@ -1003,15 +1121,17 @@ Highlight its key value proposition and why a customer would purchase it. Respon
 Product Category: ${category || "General"}
 Product Description: ${description || "No description provided"}`;
 
-    const aiResponse = await model.invoke([
-      new SystemMessage(systemPrompt),
-      new HumanMessage(userPrompt)
-    ]);
+    const aiResponse = await callGeminiWithRetry(() =>
+      model.invoke([
+        new SystemMessage(systemPrompt),
+        new HumanMessage(userPrompt)
+      ])
+    );
 
     const summary = typeof aiResponse.content === "string" ? aiResponse.content.trim() : JSON.stringify(aiResponse.content);
     return sendResponse(res, 200, true, "Product summary generated by Gemini 2.5 Flash", { summary: summary || defaultSummary });
   } catch (error: any) {
-    console.error("AI summary error:", error);
+    console.error("AI summary error:", error.message);
     return sendResponse(res, 200, true, "Summary generated (Fallback)", { summary: defaultSummary });
   }
 });

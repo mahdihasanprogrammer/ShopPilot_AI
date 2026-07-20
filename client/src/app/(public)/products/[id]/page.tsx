@@ -49,6 +49,10 @@ export default function ProductDetailsPage({
       
       if (res.data) {
         setProduct(res.data);
+        // Fire-and-forget: track product view for AI recommendations context
+        if (user) {
+          api.post(`/products/${id}/view`, {}).catch(() => {/* non-critical */});
+        }
       } else {
         setError("Product not found.");
       }
