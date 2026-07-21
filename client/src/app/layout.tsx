@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import ConditionalShell from "@/components/shared/ConditionalShell";
 import ChatWidget from "@/components/shared/ChatWidget";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { Toaster } from "sonner";
 
 const outfit = Outfit({
@@ -22,13 +23,36 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${outfit.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-background font-sans">
-        <ConditionalShell>
-          {children}
-        </ConditionalShell>
-        <ChatWidget />
-        <Toaster richColors position="top-right" closeButton />
+    <html lang="en" className={`${outfit.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('shoppilot-theme');
+                  var supportDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  if (saved === 'dark' || (!saved && supportDark) || (saved === 'system' && supportDark)) {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-background font-sans text-body transition-colors duration-250">
+        <ThemeProvider>
+          <ConditionalShell>
+            {children}
+          </ConditionalShell>
+          <ChatWidget />
+          <Toaster richColors position="top-right" closeButton />
+        </ThemeProvider>
       </body>
     </html>
   );

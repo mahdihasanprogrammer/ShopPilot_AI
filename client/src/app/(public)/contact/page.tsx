@@ -66,22 +66,22 @@ export default function ContactPage() {
   ];
 
   return (
-    <main className="flex-1 bg-[#faf9fc] py-12 md:py-20">
+    <main className="flex-1 bg-background py-12 md:py-20 transition-colors duration-250">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        
+
         {/* Heading Header */}
         <div className="text-center max-w-xl mx-auto space-y-3 animate-premium-fade">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-text-neutral">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-heading">
             Get in Touch
           </h1>
-          <p className="text-xs md:text-sm text-text-neutral/60 font-medium leading-relaxed">
+          <p className="text-xs md:text-sm text-body/80 font-medium leading-relaxed">
             Have questions about our AI-powered recommendations, order statuses, or checkout processes? Send us a message and our support team will respond shortly.
           </p>
         </div>
 
         {/* Info Grid vs Contact Form */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          
+
           {/* Contact details columns */}
           <div className="lg:col-span-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
             {contactDetails.map((detail, index) => {
@@ -89,17 +89,17 @@ export default function ContactPage() {
               return (
                 <div
                   key={index}
-                  className="rounded-2xl border border-black/[0.04] bg-white p-5 shadow-xs flex items-start gap-4"
+                  className="rounded-2xl border border-border bg-card p-5 shadow-xs flex items-start gap-4 transition-colors duration-250"
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/[0.04] text-primary border border-primary/5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
                     <Icon className="h-4.5 w-4.5" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-[10px] font-black uppercase tracking-wider text-text-neutral/40 leading-none">
+                    <h3 className="text-[10px] font-black uppercase tracking-wider text-muted leading-none">
                       {detail.title}
                     </h3>
-                    <p className="text-xs font-bold text-text-neutral">{detail.value}</p>
-                    <p className="text-[11px] text-text-neutral/50 font-medium leading-normal">
+                    <p className="text-xs font-bold text-heading">{detail.value}</p>
+                    <p className="text-[11px] text-body/70 font-medium leading-normal">
                       {detail.desc}
                     </p>
                   </div>
@@ -109,22 +109,22 @@ export default function ContactPage() {
           </div>
 
           {/* Form wrapper layout */}
-          <div className="lg:col-span-2 rounded-3xl border border-black/[0.05] bg-white p-6 md:p-8 shadow-sm flex flex-col justify-center">
+          <div className="lg:col-span-2 rounded-3xl border border-border bg-card p-6 md:p-8 shadow-sm flex flex-col justify-center transition-colors duration-250">
             {submitted ? (
               /* Success card display */
               <div className="text-center py-12 space-y-5 animate-premium-fade">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-sm">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-sm">
                   <FiCheckCircle className="h-7 w-7" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-extrabold text-text-neutral">Message Sent!</h3>
-                  <p className="text-xs text-text-neutral/55 max-w-sm mx-auto font-medium">
+                  <h3 className="text-lg font-extrabold text-heading">Message Sent!</h3>
+                  <p className="text-xs text-body/75 max-w-sm mx-auto font-medium">
                     Thank you for contacting ShopPilot. Your message has been saved to our database, and a support representative will follow up via email shortly.
                   </p>
                 </div>
                 <button
                   onClick={() => setSubmitted(false)}
-                  className="rounded-xl border border-black/[0.08] hover:bg-gray-50 px-5 py-2.5 text-xs font-bold text-text-neutral/80 transition-all cursor-pointer"
+                  className="rounded-xl border border-border hover:bg-bg-secondary px-5 py-2.5 text-xs font-bold text-heading transition-all cursor-pointer"
                 >
                   Send another message
                 </button>
@@ -134,7 +134,7 @@ export default function ContactPage() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
-                    <label htmlFor="name-input" className="text-xs font-black uppercase tracking-wider text-text-neutral/50">
+                    <label htmlFor="name-input" className="text-xs font-black uppercase tracking-wider text-muted">
                       Your Name
                     </label>
                     <input
@@ -144,13 +144,13 @@ export default function ContactPage() {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="John Doe"
                       disabled={loading}
-                      className="w-full rounded-xl border border-black/[0.06] bg-gray-50 px-3.5 py-2.5 text-xs font-semibold text-text-neutral placeholder:text-text-neutral/30 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all"
+                      className="w-full rounded-xl border border-border bg-bg-secondary px-3.5 py-2.5 text-xs font-semibold text-heading placeholder:text-muted focus:border-primary focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                       required
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label htmlFor="email-input" className="text-xs font-black uppercase tracking-wider text-text-neutral/50">
+                    <label htmlFor="email-input" className="text-xs font-black uppercase tracking-wider text-muted">
                       Your Email
                     </label>
                     <input
@@ -160,14 +160,14 @@ export default function ContactPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="john@example.com"
                       disabled={loading}
-                      className="w-full rounded-xl border border-black/[0.06] bg-gray-50 px-3.5 py-2.5 text-xs font-semibold text-text-neutral placeholder:text-text-neutral/30 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all"
+                      className="w-full rounded-xl border border-border bg-bg-secondary px-3.5 py-2.5 text-xs font-semibold text-heading placeholder:text-muted focus:border-primary focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="message-input" className="text-xs font-black uppercase tracking-wider text-text-neutral/50">
+                  <label htmlFor="message-input" className="text-xs font-black uppercase tracking-wider text-muted">
                     Message
                   </label>
                   <textarea
@@ -177,7 +177,7 @@ export default function ContactPage() {
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Describe your inquiry in detail..."
                     disabled={loading}
-                    className="w-full rounded-xl border border-black/[0.06] bg-gray-50 px-3.5 py-2.5 text-xs font-semibold text-text-neutral placeholder:text-text-neutral/30 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all resize-none"
+                    className="w-full rounded-xl border border-border bg-bg-secondary px-3.5 py-2.5 text-xs font-semibold text-heading placeholder:text-muted focus:border-primary focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
                     required
                   />
                 </div>

@@ -1,18 +1,7 @@
 @import "tailwindcss";
 
 /* ================================================================
-   ShopPilot AI — Design System (Cyan-Teal-Indigo Theme)
-   ================================================================
-   Primary    : Indigo  #4F46E5
-   Secondary  : Teal    #0D9488
-   Accent     : Orange  #F97316
-   Background : #ECFEFF
-   Surface    : #F0FDFA
-   Card       : #FFFFFF
-   Heading    : #1F2937
-   Body       : #475569
-   Footer     : #0F172A
-   Borders    : #E2E8F0 (Hover: #CBD5E1, Focus: #4F46E5)
+   ShopPilot AI — Design System (Cyan-Teal-Indigo & Dark Mode Theme)
    ================================================================ */
 
 :root {
@@ -35,7 +24,7 @@
   --background:       #ECFEFF;
   --surface:          #F0FDFA;
   --card:             #FFFFFF;
-  --bg-secondary:     #F0FDFA; /* Match Surface or clean Teal tint */
+  --bg-secondary:     #F0FDFA;
 
   /* Typography */
   --heading:          #1F2937;
@@ -61,6 +50,55 @@
   --shadow-md:  0 4px 6px rgba(15, 23, 42, 0.05), 0 2px 4px rgba(15, 23, 42, 0.03);
   --shadow-lg:  0 10px 20px rgba(15, 23, 42, 0.06), 0 4px 8px rgba(15, 23, 42, 0.03);
   --shadow-xl:  0 20px 40px rgba(79, 70, 229, 0.08), 0 8px 16px rgba(15, 23, 42, 0.04);
+}
+
+/* ── Dark Mode Tokens ── */
+.dark, [data-theme="dark"] {
+  /* Core brand tuned for dark contrast */
+  --primary:          #6366F1;
+  --primary-light:    #A5B4FC;
+  --primary-dark:     #4F46E5;
+
+  /* Secondary */
+  --secondary:        #14B8A6;
+  --secondary-light:  #5EEAD4;
+  --secondary-dark:   #0D9488;
+
+  /* Accent */
+  --accent:           #F97316;
+  --accent-light:     #7C2D12;
+  --accent-dark:      #EA580C;
+
+  /* Surfaces & Background */
+  --background:       #090F1A;
+  --surface:          #0F172A;
+  --card:             #152238;
+  --bg-secondary:     #1E293B;
+
+  /* Typography */
+  --heading:          #F8FAFC;
+  --body:             #CBD5E1;
+  --muted:            #64748B;
+  --foreground:       #F8FAFC;
+  --text-neutral:     #F8FAFC;
+
+  /* Footer */
+  --footer-bg:        #050B14;
+
+  /* Borders */
+  --border:           #24344D;
+  --border-hover:     #334866;
+  --border-focus:     #818CF8;
+
+  /* Skeleton shimmer */
+  --skeleton-base:    #1E293B;
+  --skeleton-shimmer: #334155;
+
+  /* Shadows tuned for dark mode backdrop */
+  --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md:  0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg:  0 10px 20px rgba(0, 0, 0, 0.5);
+  --shadow-xl:  0 20px 40px rgba(0, 0, 0, 0.6);
 }
 
 @theme inline {
@@ -91,8 +129,12 @@
 }
 
 /* ================================================================
-   Base Styles
+   Base Styles & Smooth Theme Transitions (200-300ms)
    ================================================================ */
+
+html {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
 
 body {
   background: var(--background);
@@ -102,10 +144,12 @@ body {
   letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {
   color: var(--heading);
+  transition: color 0.25s ease;
 }
 
 footer h1, footer h2, footer h3, footer h4, footer h5, footer h6 {
@@ -113,16 +157,90 @@ footer h1, footer h2, footer h3, footer h4, footer h5, footer h6 {
 }
 
 /* ================================================================
-   Card Components
+   Custom Browser Scrollbars (Light & Dark Theme Aware)
    ================================================================ */
 
-/* Elevated Card: visible 1px border, card background, soft shadow */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+  transition: background-color 0.25s ease;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+  border-radius: 9999px;
+  border: 2px solid var(--background);
+  transition: background-color 0.25s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hover) var(--background);
+}
+
+/* ================================================================
+   AI Response Markdown & Code Block Styling
+   ================================================================ */
+
+.prose-ai {
+  color: var(--body);
+  line-height: 1.6;
+}
+
+.prose-ai p {
+  margin-bottom: 0.5rem;
+}
+
+.prose-ai p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-ai code {
+  background: var(--bg-secondary);
+  color: var(--primary-light);
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.82em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  border: 1px solid var(--border);
+}
+
+.prose-ai pre {
+  background: var(--surface);
+  color: var(--heading);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  font-size: 0.825rem;
+  margin: 0.5rem 0;
+}
+
+.prose-ai pre code {
+  background: transparent;
+  padding: 0;
+  border: none;
+  color: inherit;
+}
+
+/* ================================================================
+   Card Components with Theme Transition
+   ================================================================ */
+
 .card-elevated {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
 }
 
 .card-elevated:hover {
@@ -131,13 +249,12 @@ footer h1, footer h2, footer h3, footer h4, footer h5, footer h6 {
   transform: translateY(-1px);
 }
 
-/* Premium Card */
 .card-premium {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 20px;
   box-shadow: var(--shadow-md);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-premium:hover {
@@ -156,13 +273,13 @@ footer h1, footer h2, footer h3, footer h4, footer h5, footer h6 {
   border-radius: 12px;
   color: var(--heading);
   box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
 }
 
 .input-premium:focus {
   outline: none;
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.10);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .input-premium::placeholder {
@@ -210,7 +327,7 @@ footer h1, footer h2, footer h3, footer h4, footer h5, footer h6 {
   font-weight: 600;
   font-size: 0.875rem;
   padding: 0.625rem 1.25rem;
-  transition: all 0.2s ease;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.2s ease;
   cursor: pointer;
 }
 
@@ -229,6 +346,7 @@ footer h1, footer h2, footer h3, footer h4, footer h5, footer h6 {
   border-radius: 8px;
   position: relative;
   overflow: hidden;
+  transition: background-color 0.25s ease;
 }
 
 .skeleton::after {
@@ -278,11 +396,12 @@ footer h1, footer h2, footer h3, footer h4, footer h5, footer h6 {
 .divider {
   height: 1px;
   background: var(--border);
+  transition: background-color 0.25s ease;
 }
 
 ::selection {
-  background: rgba(79, 70, 229, 0.12);
-  color: var(--primary-dark);
+  background: rgba(99, 102, 241, 0.25);
+  color: var(--primary-light);
 }
 
 /* ================================================================
@@ -318,6 +437,7 @@ select:disabled,
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
+  transition: border-color 0.25s ease;
 }
 
 .table-premium th {
@@ -330,6 +450,7 @@ select:disabled,
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border);
   text-align: left;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
 
 .table-premium td {
@@ -337,6 +458,7 @@ select:disabled,
   border-bottom: 1px solid var(--border);
   color: var(--body);
   font-size: 0.875rem;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
 
 .table-premium tr:last-child td {

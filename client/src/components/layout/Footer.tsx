@@ -15,7 +15,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-footer-bg text-gray-300 border-t border-white/[0.08] mt-auto">
+    <footer className="bg-footer-bg text-gray-300 border-t border-white/[0.08] mt-auto transition-colors duration-250">
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
 
         {/* Main Grid */}

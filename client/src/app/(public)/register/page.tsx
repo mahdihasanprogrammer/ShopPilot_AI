@@ -7,7 +7,7 @@ import { signUp } from "@/lib/auth-client";
 import AuthInput from "@/components/auth/AuthInput";
 import AuthButton from "@/components/auth/AuthButton";
 import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from "react-icons/hi";
-import { MdWarning, MdCheckCircle } from "react-icons/md";
+import { MdCheckCircle } from "react-icons/md";
 import { LuImagePlus, LuX } from "react-icons/lu";
 import { toast } from "sonner";
 
@@ -39,7 +39,7 @@ function PasswordStrengthMeter({ password }: { password: string }) {
   const passed = rules.filter((r) => r.passed).length;
   const barColors = ["bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-green-500"];
   const strengthLabels = ["Too weak", "Weak", "Medium", "Strong"];
-  const textColors = ["text-red-500", "text-orange-500", "text-yellow-600", "text-green-600"];
+  const textColors = ["text-red-500", "text-orange-500", "text-yellow-500", "text-green-500"];
 
   return (
     <div className="mt-2.5 space-y-2">
@@ -63,13 +63,13 @@ function PasswordStrengthMeter({ password }: { password: string }) {
           <li
             key={r.label}
             className={`flex items-center gap-1 text-[10px] font-medium ${
-              r.passed ? "text-green-600" : "text-text-neutral/45"
+              r.passed ? "text-green-500" : "text-muted"
             }`}
           >
             {r.passed ? (
               <MdCheckCircle className="h-3 w-3 shrink-0 text-green-500" />
             ) : (
-              <span className="h-3 w-3 shrink-0 rounded-full border border-text-neutral/20 inline-block" />
+              <span className="h-3 w-3 shrink-0 rounded-full border border-border inline-block" />
             )}
             {r.label}
           </li>
@@ -125,21 +125,21 @@ export default function RegisterPage() {
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
     if (!name.trim()) newErrors.name = "Full name is required.";
-    
+
     const emailErr = validateEmail(email);
     if (emailErr) newErrors.email = emailErr;
-    
+
     const passErrors = validatePassword(password);
     if (passErrors.length > 0) {
       newErrors.password = `Password must contain: ${passErrors.join(", ")}.`;
     }
-    
+
     if (!confirmPassword) {
       newErrors.confirmPassword = "Please confirm your password.";
     } else if (password !== confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match.";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -175,24 +175,24 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="flex-1 flex items-center justify-center px-4 py-12 bg-gradient-to-b from-background to-bg-secondary">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-bg-secondary p-8 bg-background shadow-lg transition-all hover:shadow-xl">
+    <main className="flex-1 flex items-center justify-center px-4 py-12 bg-background transition-colors duration-250">
+      <div className="w-full max-w-md space-y-6 rounded-2xl border border-border p-8 bg-card shadow-lg transition-all hover:shadow-xl">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-text-neutral">Create Account</h1>
-          <p className="mt-2 text-sm text-text-neutral/60">Sign up to start shopping with ShopPilot AI</p>
+          <h1 className="text-3xl font-bold tracking-tight text-heading">Create Account</h1>
+          <p className="mt-2 text-sm text-body/75">Sign up to start shopping with ShopPilot AI</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {/* Avatar Upload */}
           <div className="flex flex-col items-center space-y-2 pb-1">
-            <label className="text-xs font-semibold uppercase tracking-wider text-text-neutral/70">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted">
               Profile Avatar (Optional)
             </label>
             <div className="relative group cursor-pointer h-20 w-20 rounded-full border-2 border-dashed border-primary/30 bg-bg-secondary overflow-hidden hover:border-primary transition-all">
               {avatarPreview ? (
                 <img src={avatarPreview} alt="Preview" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-neutral/40">
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted">
                   <LuImagePlus className="h-6 w-6" />
                   <span className="text-[9px] font-medium">Upload</span>
                 </div>
@@ -212,7 +212,7 @@ export default function RegisterPage() {
                   setAvatar(null);
                   setAvatarPreview(null);
                 }}
-                className="flex items-center gap-1 text-[10px] font-semibold text-red-500 hover:underline"
+                className="flex items-center gap-1 text-[10px] font-semibold text-red-500 hover:underline cursor-pointer"
               >
                 <LuX className="h-3 w-3" /> Remove image
               </button>
@@ -283,7 +283,7 @@ export default function RegisterPage() {
               icon={HiOutlineLockClosed}
             />
             {confirmPassword && !errors.confirmPassword && password === confirmPassword && (
-              <p className="mt-1 flex items-center gap-1 text-[10px] font-medium text-green-600">
+              <p className="mt-1 flex items-center gap-1 text-[10px] font-medium text-green-500">
                 <MdCheckCircle className="h-3.5 w-3.5" />
                 Passwords match
               </p>
@@ -293,9 +293,9 @@ export default function RegisterPage() {
           <AuthButton loading={loading}>Create Account</AuthButton>
         </form>
 
-        <p className="text-center text-xs text-text-neutral/60">
+        <p className="text-center text-xs text-body/75">
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-primary hover:underline">
+          <Link href="/login" className="font-semibold text-primary hover:underline cursor-pointer">
             Sign In Here
           </Link>
         </p>

@@ -19,15 +19,15 @@ export default function FilterPanel({
   onClear,
 }: FilterPanelProps) {
   return (
-    <div className="rounded-2xl border border-bg-secondary bg-background p-6 space-y-6 shadow-sm">
-      <div className="flex items-center justify-between pb-3 border-b border-bg-secondary">
-        <div className="flex items-center gap-2 font-bold text-sm text-text-neutral">
+    <div className="rounded-2xl border border-border bg-card p-6 space-y-6 shadow-sm transition-colors duration-250">
+      <div className="flex items-center justify-between pb-3 border-b border-border">
+        <div className="flex items-center gap-2 font-bold text-sm text-heading">
           <FiFilter className="h-4.5 w-4.5 text-primary" />
           <span>Filters</span>
         </div>
         <button
           onClick={onClear}
-          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-text-neutral/40 hover:text-primary transition-colors"
+          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-primary transition-colors cursor-pointer"
         >
           <FiRefreshCw className="h-3 w-3" />
           Clear
@@ -36,13 +36,13 @@ export default function FilterPanel({
 
       {/* Category Select */}
       <div className="space-y-2">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-text-neutral/60">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
           Category
         </label>
         <select
           value={category}
           onChange={(e) => onFilterChange({ category: e.target.value })}
-          className="w-full rounded-xl border border-bg-secondary bg-background px-3 py-2 text-xs text-text-neutral focus:border-primary focus:outline-none transition-all"
+          className="w-full rounded-xl border border-border bg-bg-secondary px-3 py-2 text-xs text-heading focus:border-primary focus:outline-none transition-all cursor-pointer"
         >
           <option value="">All Categories</option>
           {CATEGORIES.map((cat) => (
@@ -55,7 +55,7 @@ export default function FilterPanel({
 
       {/* Price Range Inputs */}
       <div className="space-y-2">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-text-neutral/60">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
           Price Range ($)
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -65,7 +65,7 @@ export default function FilterPanel({
             onChange={(e) => onFilterChange({ minPrice: e.target.value })}
             placeholder="Min"
             min="0"
-            className="w-full rounded-xl border border-bg-secondary bg-background px-3 py-2 text-xs text-text-neutral focus:border-primary focus:outline-none transition-all"
+            className="w-full rounded-xl border border-border bg-bg-secondary px-3 py-2 text-xs text-heading placeholder:text-muted focus:border-primary focus:outline-none transition-all"
           />
           <input
             type="number"
@@ -73,7 +73,7 @@ export default function FilterPanel({
             onChange={(e) => onFilterChange({ maxPrice: e.target.value })}
             placeholder="Max"
             min="0"
-            className="w-full rounded-xl border border-bg-secondary bg-background px-3 py-2 text-xs text-text-neutral focus:border-primary focus:outline-none transition-all"
+            className="w-full rounded-xl border border-border bg-bg-secondary px-3 py-2 text-xs text-heading placeholder:text-muted focus:border-primary focus:outline-none transition-all"
           />
         </div>
       </div>

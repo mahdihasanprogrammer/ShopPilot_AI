@@ -19,6 +19,7 @@ import {
 } from "react-icons/fi";
 import { MdAdminPanelSettings } from "react-icons/md";
 import CartDrawer from "./CartDrawer";
+import ThemeToggle from "./ThemeToggle";
 
 // ---- Avatar component with image or name initial fallback ----
 function UserAvatar({
@@ -95,7 +96,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-card/90 backdrop-blur-md shadow-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-card/90 backdrop-blur-md shadow-sm transition-colors duration-250">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
 
         {/* ── Logo ── */}
@@ -118,7 +119,7 @@ export default function Navbar() {
                 href={href}
                 className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition-all cursor-pointer ${
                   isActive
-                    ? "text-primary bg-primary/5"
+                    ? "text-primary bg-primary/10"
                     : "text-body hover:text-heading hover:bg-bg-secondary"
                 }`}
               >
@@ -131,6 +132,9 @@ export default function Navbar() {
 
         {/* ── Right Controls ── */}
         <div className="flex items-center gap-2">
+          {/* Theme Toggle Button */}
+          <ThemeToggle />
+
           {/* Cart drawer — only shown for logged-in non-admins */}
           <CartDrawer />
 
@@ -181,7 +185,7 @@ export default function Navbar() {
                       <Link
                         href={dashboardHref}
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-body hover:text-primary hover:bg-primary/5 transition-all cursor-pointer"
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-body hover:text-primary hover:bg-primary/10 transition-all cursor-pointer"
                       >
                         {isAdmin ? (
                           <MdAdminPanelSettings className="h-4 w-4 text-accent" />
@@ -193,7 +197,7 @@ export default function Navbar() {
 
                       <button
                         onClick={handleSignOut}
-                        className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50/50 transition-all cursor-pointer"
+                        className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-bold text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
                       >
                         <FiLogOut className="h-4 w-4" />
                         Sign Out
@@ -236,7 +240,12 @@ export default function Navbar() {
 
       {/* ── Mobile Menu Panel ── */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-card px-4 py-5 space-y-1 shadow-lg animate-fadeIn">
+        <div className="md:hidden border-t border-border bg-card px-4 py-5 space-y-2 shadow-lg animate-fadeIn">
+          <div className="flex items-center justify-between px-2 pb-2 border-b border-border">
+            <span className="text-xs font-bold text-muted uppercase tracking-wider">Appearance</span>
+            <ThemeToggle showLabel />
+          </div>
+
           {navLinks.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || pathname.startsWith(href + "/");
             return (
@@ -246,7 +255,7 @@ export default function Navbar() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
                   isActive
-                    ? "text-primary bg-primary/5"
+                    ? "text-primary bg-primary/10"
                     : "text-body hover:text-heading hover:bg-bg-secondary"
                 }`}
               >
@@ -262,7 +271,7 @@ export default function Navbar() {
             ) : user ? (
               <div className="space-y-2">
                 {/* Mobile user info */}
-                <div className="flex items-center gap-3 px-4 py-2 bg-bg-secondary/40 rounded-2xl">
+                <div className="flex items-center gap-3 px-4 py-2 bg-bg-secondary/60 rounded-2xl border border-border">
                   <UserAvatar name={user.name} image={user.image} size="md" />
                   <div>
                     <p className="text-sm font-bold text-heading leading-tight">{user.name}</p>
@@ -274,14 +283,14 @@ export default function Navbar() {
                 <Link
                   href={dashboardHref}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-body hover:text-primary hover:bg-primary/5 transition-all cursor-pointer"
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-body hover:text-primary hover:bg-primary/10 transition-all cursor-pointer"
                 >
                   <FiGrid className="h-4 w-4 text-primary" />
                   {isAdmin ? "Admin Dashboard" : "My Dashboard"}
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50/50 transition-all cursor-pointer"
+                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
                 >
                   <FiLogOut className="h-4 w-4" />
                   Sign Out

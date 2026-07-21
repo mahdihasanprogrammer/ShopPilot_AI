@@ -13,7 +13,6 @@ import {
   FiHome,
   FiMenu,
   FiX,
-  FiCompass,
   FiPackage,
   FiList,
 } from "react-icons/fi";
@@ -74,7 +73,7 @@ export default function DashboardSidebar() {
     session?.user?.name?.charAt(0).toUpperCase() ?? "?";
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full w-64 bg-card border-r border-border shadow-sm">
+    <div className="flex flex-col h-full w-64 bg-card border-r border-border shadow-sm transition-colors duration-250">
       {/* ── Brand Header ── */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-border">
         <Link href="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
@@ -96,7 +95,7 @@ export default function DashboardSidebar() {
 
       {/* ── Role Badge ── */}
       <div className="px-5 py-3 border-b border-border">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/[0.07] text-primary border border-primary/15">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
           <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />
           {role}
         </span>
@@ -109,7 +108,7 @@ export default function DashboardSidebar() {
           const isActive = item.href ? pathname === item.href : false;
 
           const activeClasses =
-            "bg-primary/[0.08] text-primary font-bold border border-primary/15";
+            "bg-primary/10 text-primary font-bold border border-primary/20";
           const inactiveClasses =
             "text-body hover:text-heading hover:bg-surface font-medium border border-transparent";
 
@@ -120,7 +119,7 @@ export default function DashboardSidebar() {
                 onClick={item.onClick}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-all text-left ${inactiveClasses}`}
               >
-                <Icon className="h-4 w-4 shrink-0 text-body/50" />
+                <Icon className="h-4 w-4 shrink-0 text-muted" />
                 {item.label}
               </button>
             );
@@ -137,7 +136,7 @@ export default function DashboardSidebar() {
             >
               <Icon
                 className={`h-4 w-4 shrink-0 ${
-                  isActive ? "text-primary" : "text-body/50"
+                  isActive ? "text-primary" : "text-muted"
                 }`}
               />
               {item.label}
@@ -154,7 +153,7 @@ export default function DashboardSidebar() {
           onClick={() => setIsOpen(false)}
           className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-body hover:text-heading hover:bg-surface border border-transparent transition-all"
         >
-          <FiHome className="h-4 w-4 shrink-0 text-body/50" />
+          <FiHome className="h-4 w-4 shrink-0 text-muted" />
           Back to Store
         </Link>
       </nav>
@@ -162,7 +161,7 @@ export default function DashboardSidebar() {
       {/* ── User Profile + Sign Out ── */}
       <div className="px-4 py-4 border-t border-border space-y-3">
         {session?.user && (
-          <div className="flex items-center gap-3 px-1 py-2 rounded-xl bg-surface border border-border">
+          <div className="flex items-center gap-3 px-1.5 py-2 rounded-xl bg-surface border border-border">
             {session.user.image ? (
               <img
                 src={session.user.image}
@@ -178,7 +177,7 @@ export default function DashboardSidebar() {
               <p className="text-[13px] font-bold text-heading truncate">
                 {session.user.name}
               </p>
-              <p className="text-[11px] text-body/60 truncate leading-tight">
+              <p className="text-[11px] text-muted truncate leading-tight">
                 {session.user.email}
               </p>
             </div>
@@ -186,7 +185,7 @@ export default function DashboardSidebar() {
         )}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2.5 text-[13px] font-bold transition-all"
+          className="w-full flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2.5 text-[13px] font-bold transition-all cursor-pointer"
         >
           <FiLogOut className="h-4 w-4" />
           Sign Out
@@ -198,7 +197,7 @@ export default function DashboardSidebar() {
   return (
     <>
       {/* ── Mobile Top Bar ── */}
-      <div className="lg:hidden flex items-center justify-between px-5 py-3 bg-card border-b border-border w-full z-30 shadow-sm">
+      <div className="lg:hidden flex items-center justify-between px-5 py-3 bg-card border-b border-border w-full z-30 shadow-sm transition-colors duration-250">
         <Link href="/" className="flex items-center gap-2">
           <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
             <RiSparklingFill className="h-3.5 w-3.5 text-primary" />
@@ -209,7 +208,7 @@ export default function DashboardSidebar() {
         </Link>
         <button
           onClick={toggleSidebar}
-          className="p-2 rounded-xl border border-border bg-surface text-body hover:text-primary hover:border-border-hover transition-all"
+          className="p-2 rounded-xl border border-border bg-surface text-body hover:text-primary hover:border-border-hover transition-all cursor-pointer"
           aria-label="Toggle sidebar"
         >
           <FiMenu className="h-5 w-5" />
@@ -225,7 +224,7 @@ export default function DashboardSidebar() {
       {isOpen && (
         <div className="fixed inset-0 z-40 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-black/25 backdrop-blur-sm animate-fadeIn"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm animate-fadeIn"
             onClick={toggleSidebar}
           />
           <div className="relative z-50 h-full animate-slideIn">

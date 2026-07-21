@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 import { IoChatbubbleEllipsesSharp, IoClose, IoPaperPlane } from "react-icons/io5";
 import { RiRobot2Line, RiSparklingLine } from "react-icons/ri";
-import { FiLoader, FiUser, FiInfo, FiCornerDownRight } from "react-icons/fi";
+import { FiUser, FiInfo, FiCornerDownRight } from "react-icons/fi";
 
 interface Message {
   id: string;
@@ -19,7 +19,6 @@ export default function ChatWidget() {
   const { data: session, isPending } = useSession();
   const user = session?.user;
   const isAdmin = user?.role === "admin";
-  const userId = user?.id;
 
   const pathname = usePathname();
   const router = useRouter();
@@ -192,12 +191,75 @@ export default function ChatWidget() {
     handleSend(input);
   };
 
+  // Renderer for assistant markdown/code block content
+  const renderMessageContent = (content: string) => {
+    // 1. Split code blocks (```code```)
+    const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
+    const parts: { type: "text" | "codeblock"; lang?: string; code?: string; content?: string }[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = codeBlockRegex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: "text", content: content.slice(lastIndex, match.index) });
+      }
+      parts.push({ type: "codeblock", lang: match[1] || "code", code: match[2] });
+      lastIndex = codeBlockRegex.lastIndex;
+    }
+    if (lastIndex < content.length) {
+      parts.push({ type: "text", content: content.slice(lastIndex) });
+    }
+
+    return (
+      <div className="prose-ai space-y-2">
+        {parts.map((part, pIdx) => {
+          if (part.type === "codeblock") {
+            return (
+              <pre key={pIdx} className="my-2 p-3 rounded-xl bg-surface border border-border text-xs overflow-x-auto">
+                <code>{part.code}</code>
+              </pre>
+            );
+          }
+
+          if (!part.content) return null;
+
+          // 2. Parse inline links and inline code `code`
+          const inlineParts = part.content.split(/(`[^`]+`|\[[^\]]+\]\(\/products\/[a-zA-Z0-9_\-]+\))/g);
+
+          return (
+            <p key={pIdx} className="whitespace-pre-line leading-relaxed">
+              {inlineParts.map((subPart, i) => {
+                if (subPart.startsWith("`") && subPart.endsWith("`")) {
+                  return <code key={i}>{subPart.slice(1, -1)}</code>;
+                }
+                const linkMatch = subPart.match(/\[([^\]]+)\]\(\/products\/([a-zA-Z0-9_\-]+)\)/);
+                if (linkMatch) {
+                  return (
+                    <Link
+                      key={i}
+                      href={`/products/${linkMatch[2]}`}
+                      className="text-primary hover:underline font-bold"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      {linkMatch[1]}
+                    </Link>
+                  );
+                }
+                return subPart;
+              })}
+            </p>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="fixed bottom-6 right-6 z-50">
       {isOpen ? (
-        <div className="flex h-[480px] w-80 md:w-96 flex-col rounded-3xl border border-black/[0.06] bg-white shadow-2xl animate-fadeIn overflow-hidden">
+        <div className="flex h-[480px] w-80 md:w-96 flex-col rounded-3xl border border-border bg-card shadow-2xl animate-fadeIn overflow-hidden transition-all duration-250">
           {/* ── Header ── */}
-          <div className="flex items-center justify-between border-b border-black/[0.05] bg-gradient-to-r from-primary to-primary-dark px-5 py-4 text-white shrink-0">
+          <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-primary to-primary-dark px-5 py-4 text-white shrink-0">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
                 <RiRobot2Line className="h-4.5 w-4.5 text-white" />
@@ -220,7 +282,7 @@ export default function ChatWidget() {
           </div>
 
           {/* ── Content Body ── */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#faf9fc] overscroll-contain">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-background overscroll-contain">
             {messages.map((msg) => {
               const isAI = msg.role === "assistant";
               return (
@@ -240,37 +302,15 @@ export default function ChatWidget() {
                   </div>
 
                   {/* Message content */}
-                  <div className="max-w-[75%] space-y-1">
+                  <div className="max-w-[78%] space-y-1">
                     <div
                       className={`rounded-2xl px-3.5 py-2.5 text-xs font-medium leading-relaxed shadow-xs border ${
                         isAI
-                          ? "bg-white text-text-neutral border-black/[0.04] rounded-tl-none"
+                          ? "bg-surface text-heading border-border rounded-tl-none"
                           : "bg-primary text-white border-transparent rounded-tr-none"
                       }`}
                     >
-                      {/* Simple markdown parser for product links */}
-                      {isAI ? (
-                        <p className="whitespace-pre-line">
-                          {msg.content.split(/(\[[^\]]+\]\(\/products\/[a-zA-Z0-9_\-]+\))/g).map((part, i) => {
-                            const match = part.match(/\[([^\]]+)\]\(\/products\/([a-zA-Z0-9_\-]+)\)/);
-                            if (match) {
-                              return (
-                                <Link
-                                  key={i}
-                                  href={`/products/${match[2]}`}
-                                  className="text-primary hover:underline font-bold"
-                                  onClick={() => setIsOpen(false)}
-                                >
-                                  {match[1]}
-                                </Link>
-                              );
-                            }
-                            return part;
-                          })}
-                        </p>
-                      ) : (
-                        msg.content
-                      )}
+                      {isAI ? renderMessageContent(msg.content) : msg.content}
                     </div>
                   </div>
                 </div>
@@ -283,10 +323,10 @@ export default function ChatWidget() {
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border bg-primary/10 border-primary/20 text-primary shadow-sm">
                   <RiRobot2Line className="h-4 w-4" />
                 </div>
-                <div className="bg-white border border-black/[0.04] rounded-2xl rounded-tl-none px-3.5 py-3 flex items-center gap-1.5 shadow-xs">
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+                <div className="bg-surface border border-border rounded-2xl rounded-tl-none px-3.5 py-3 flex items-center gap-1.5 shadow-xs">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
               </div>
             )}
@@ -296,8 +336,8 @@ export default function ChatWidget() {
 
           {/* ── Suggested Prompts Section ── */}
           {suggestions.length > 0 && !loading && (
-            <div className="bg-white px-4 py-2 border-t border-black/[0.04] shrink-0">
-              <p className="text-[9px] font-black text-text-neutral/40 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <div className="bg-card px-4 py-2 border-t border-border shrink-0">
+              <p className="text-[9px] font-black text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <RiSparklingLine className="h-3 w-3 text-primary animate-pulse" /> Suggested actions
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -305,7 +345,7 @@ export default function ChatWidget() {
                   <button
                     key={i}
                     onClick={() => handleSend(sug)}
-                    className="text-[10px] font-bold text-primary bg-primary/[0.04] hover:bg-primary/[0.08] border border-primary/10 rounded-full px-2.5 py-1 text-left flex items-center gap-0.5 transition-all cursor-pointer"
+                    className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-full px-2.5 py-1 text-left flex items-center gap-0.5 transition-all cursor-pointer"
                   >
                     <FiCornerDownRight className="h-2.5 w-2.5 shrink-0" />
                     {sug}
@@ -316,7 +356,7 @@ export default function ChatWidget() {
           )}
 
           {/* ── Input bar footer ── */}
-          <div className="border-t border-black/[0.05] p-3.5 bg-white shrink-0">
+          <div className="border-t border-border p-3.5 bg-card shrink-0">
             {user ? (
               <form onSubmit={onSubmit} className="flex gap-2">
                 <input
@@ -325,7 +365,7 @@ export default function ChatWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask for details, stock, comparisons..."
                   disabled={loading}
-                  className="flex-1 rounded-xl border border-black/[0.06] bg-gray-50 px-3.5 py-2 text-xs font-semibold text-text-neutral placeholder:text-text-neutral/30 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all disabled:opacity-50"
+                  className="flex-1 rounded-xl border border-border bg-bg-secondary px-3.5 py-2 text-xs font-semibold text-heading placeholder:text-muted focus:border-primary focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-50"
                 />
                 <button
                   type="submit"
@@ -339,7 +379,7 @@ export default function ChatWidget() {
             ) : (
               /* If not logged in, show login promo teaser */
               <div className="flex flex-col gap-2 p-1.5 text-center">
-                <p className="text-[11px] font-semibold text-text-neutral/60 leading-normal">
+                <p className="text-[11px] font-semibold text-body leading-normal">
                   Want to query stock levels or get shopping assistance?
                 </p>
                 <button

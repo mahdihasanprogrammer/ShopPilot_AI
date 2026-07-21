@@ -19,10 +19,7 @@ import {
   FiShoppingBag,
   FiCreditCard,
   FiLock,
-  FiUser,
   FiMapPin,
-  FiMail,
-  FiPhone,
   FiCheckCircle,
   FiAlertCircle,
   FiPackage,
@@ -65,13 +62,13 @@ function OrderSummary({ cart }: { cart: CartItem[] }) {
   return (
     <div className="space-y-6">
       <div className="card-premium p-6">
-        <h2 className="text-base font-extrabold text-text-neutral mb-5 flex items-center gap-2">
+        <h2 className="text-base font-extrabold text-heading mb-5 flex items-center gap-2">
           <FiShoppingBag className="h-4.5 w-4.5 text-primary" />
           Order Summary
         </h2>
 
         {cart.length === 0 ? (
-          <div className="text-center py-8 text-text-neutral/40 text-xs font-semibold">
+          <div className="text-center py-8 text-muted text-xs font-semibold">
             <FiPackage className="h-8 w-8 mx-auto mb-2 opacity-30" />
             Your cart is empty
           </div>
@@ -83,33 +80,33 @@ function OrderSummary({ cart }: { cart: CartItem[] }) {
                   <img
                     src={item.image}
                     alt={item.title}
-                    className="h-12 w-12 rounded-xl object-cover border border-black/[0.04]"
+                    className="h-12 w-12 rounded-xl object-cover border border-border bg-bg-secondary"
                   />
                 ) : (
-                  <div className="h-12 w-12 rounded-xl bg-black/[0.03] flex items-center justify-center">
-                    <FiShoppingBag className="h-5 w-5 text-text-neutral/30" />
+                  <div className="h-12 w-12 rounded-xl bg-bg-secondary flex items-center justify-center border border-border">
+                    <FiShoppingBag className="h-5 w-5 text-muted" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-text-neutral truncate">{item.title}</p>
-                  <p className="text-[11px] text-text-neutral/50 font-medium">Qty: {item.qty}</p>
+                  <p className="text-xs font-bold text-heading truncate">{item.title}</p>
+                  <p className="text-[11px] text-muted font-medium">Qty: {item.qty}</p>
                 </div>
-                <span className="text-xs font-extrabold text-text-neutral shrink-0">
+                <span className="text-xs font-extrabold text-heading shrink-0">
                   ${(item.price * item.qty).toFixed(2)}
                 </span>
               </div>
             ))}
 
-            <div className="border-t border-black/[0.04] pt-3 mt-3 space-y-2">
-              <div className="flex justify-between text-xs text-text-neutral/60 font-semibold">
+            <div className="border-t border-border pt-3 mt-3 space-y-2">
+              <div className="flex justify-between text-xs text-body font-semibold">
                 <span>Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-xs text-text-neutral/60 font-semibold">
+              <div className="flex justify-between text-xs text-body font-semibold">
                 <span>Shipping</span>
-                <span>{shipping === 0 ? <span className="text-emerald-600">Free</span> : `$${shipping.toFixed(2)}`}</span>
+                <span>{shipping === 0 ? <span className="text-emerald-500">Free</span> : `$${shipping.toFixed(2)}`}</span>
               </div>
-              <div className="flex justify-between text-sm font-extrabold text-text-neutral border-t border-black/[0.04] pt-2 mt-2">
+              <div className="flex justify-between text-sm font-extrabold text-heading border-t border-border pt-2 mt-2">
                 <span>Total</span>
                 <span>${total.toFixed(2)}</span>
               </div>
@@ -120,21 +117,21 @@ function OrderSummary({ cart }: { cart: CartItem[] }) {
 
       {/* Free shipping note */}
       {getCartTotal(cart) < 75 && cart.length > 0 && (
-        <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-xs font-semibold text-amber-700">
+        <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-xs font-semibold text-amber-500">
           Add ${(75 - getCartTotal(cart)).toFixed(2)} more for free shipping!
         </div>
       )}
 
       {/* Security badge */}
-      <div className="flex items-center gap-2 text-[11px] text-text-neutral/40 font-medium px-1">
-        <FiLock className="h-3.5 w-3.5 text-primary/40 shrink-0" />
+      <div className="flex items-center gap-2 text-[11px] text-muted font-medium px-1">
+        <FiLock className="h-3.5 w-3.5 text-primary/60 shrink-0" />
         Payments secured by Stripe. Your card info is never stored on our servers.
       </div>
     </div>
   );
 }
 
-// ---- Inner checkout form (needs Stripe context if real Stripe) ----
+// ---- Inner checkout form ----
 function CheckoutForm({
   cart,
   onSuccess,
@@ -189,7 +186,7 @@ function CheckoutForm({
         paymentIntentId: string;
         simulated?: boolean;
       }>("/payments/create-payment-intent", {
-        amount: Math.round(totalAmount * 100), // cents
+        amount: Math.round(totalAmount * 100),
         currency: "usd",
       });
 
@@ -204,7 +201,6 @@ function CheckoutForm({
       let confirmedIntentId = paymentIntentId;
 
       if (!simulated && stripe && elements) {
-        // 2a. Real Stripe confirmation
         const cardEl = elements.getElement(CardElement);
         if (!cardEl) {
           setCardError("Card element not found.");
@@ -232,9 +228,8 @@ function CheckoutForm({
 
         confirmedIntentId = paymentIntent?.id || paymentIntentId;
       }
-      // 2b. Simulated — skip actual Stripe confirmation, treat as succeeded
 
-      // 3. Save order
+      // Save order
       const orderRes = await api.post<{ _id: string; id: string }>("/orders", {
         items: cart.map((c) => ({
           productId: c.productId,
@@ -281,7 +276,7 @@ function CheckoutForm({
     colSpan = "col-span-2"
   ) => (
     <div className={colSpan}>
-      <label className="block text-[11px] font-bold text-text-neutral/50 uppercase tracking-wider mb-1.5">
+      <label className="block text-[11px] font-bold text-muted uppercase tracking-wider mb-1.5">
         {label}
       </label>
       <input
@@ -292,10 +287,10 @@ function CheckoutForm({
           if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
         }}
         placeholder={placeholder}
-        className={`w-full rounded-xl border px-4 py-3 text-sm font-medium text-text-neutral placeholder:text-text-neutral/30 focus:outline-none transition-all bg-white/60 ${
+        className={`w-full rounded-xl border px-4 py-3 text-sm font-medium text-heading placeholder:text-muted focus:outline-none transition-all bg-bg-secondary ${
           errors[name]
-            ? "border-red-300 bg-red-50/30 focus:border-red-400 focus:ring-2 focus:ring-red-100"
-            : "border-black/[0.06] focus:border-primary focus:ring-2 focus:ring-primary/10"
+            ? "border-red-500/50 bg-red-500/10 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+            : "border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
         }`}
       />
       {errors[name] && (
@@ -310,8 +305,8 @@ function CheckoutForm({
     return (
       <div className="card-premium p-12 flex flex-col items-center justify-center gap-4 text-center min-h-[300px]">
         <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-        <p className="text-sm font-bold text-text-neutral">Processing your payment…</p>
-        <p className="text-xs text-text-neutral/50 font-medium">Please don't close this page</p>
+        <p className="text-sm font-bold text-heading">Processing your payment…</p>
+        <p className="text-xs text-muted font-medium">Please don't close this page</p>
       </div>
     );
   }
@@ -320,7 +315,7 @@ function CheckoutForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Shipping info */}
       <div className="card-premium p-6">
-        <h2 className="text-base font-extrabold text-text-neutral mb-5 flex items-center gap-2">
+        <h2 className="text-base font-extrabold text-heading mb-5 flex items-center gap-2">
           <FiMapPin className="h-4.5 w-4.5 text-primary" />
           Shipping Information
         </h2>
@@ -333,13 +328,13 @@ function CheckoutForm({
           {field("state", "State / Province", "NY", "text", "col-span-1")}
           {field("zip", "ZIP / Postal Code", "10001", "text", "col-span-1")}
           <div className="col-span-2">
-            <label className="block text-[11px] font-bold text-text-neutral/50 uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-bold text-muted uppercase tracking-wider mb-1.5">
               Country
             </label>
             <select
               value={form.country}
               onChange={(e) => setForm((prev) => ({ ...prev, country: e.target.value }))}
-              className="w-full rounded-xl border border-black/[0.06] bg-white/60 px-4 py-3 text-sm font-medium text-text-neutral focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"
+              className="w-full rounded-xl border border-border bg-bg-secondary px-4 py-3 text-sm font-medium text-heading focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
             >
               <option value="US">United States</option>
               <option value="GB">United Kingdom</option>
@@ -356,41 +351,41 @@ function CheckoutForm({
 
       {/* Payment */}
       <div className="card-premium p-6">
-        <h2 className="text-base font-extrabold text-text-neutral mb-5 flex items-center gap-2">
+        <h2 className="text-base font-extrabold text-heading mb-5 flex items-center gap-2">
           <FiCreditCard className="h-4.5 w-4.5 text-primary" />
           Payment Details
         </h2>
 
         {useSimulated ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3.5 text-xs font-semibold text-amber-700 space-y-1">
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3.5 text-xs font-semibold text-amber-500 space-y-1">
             <p className="font-extrabold">🧪 Test Mode (Simulated)</p>
             <p>No Stripe publishable key set. Payment will be simulated successfully.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {/* Test card hint */}
-            <div className="rounded-xl border border-primary/10 bg-primary/[0.03] px-4 py-3 text-xs font-semibold text-primary/80">
+            <div className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs font-semibold text-primary">
               <span className="font-extrabold">Test card:</span>{" "}
-              <code className="font-mono bg-primary/10 rounded px-1.5 py-0.5 text-[11px]">
+              <code className="font-mono bg-primary/20 rounded px-1.5 py-0.5 text-[11px]">
                 4242 4242 4242 4242
               </code>
               {" "}· Any future expiry · Any 3-digit CVC
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-text-neutral/50 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-bold text-muted uppercase tracking-wider mb-1.5">
                 Card Details
               </label>
-              <div className="rounded-xl border border-black/[0.06] bg-white/60 px-4 py-3.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+              <div className="rounded-xl border border-border bg-bg-secondary px-4 py-3.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <CardElement
                   options={{
                     style: {
                       base: {
                         fontSize: "14px",
                         fontFamily: "var(--font-sans), sans-serif",
-                        color: "#1f2937",
-                        "::placeholder": { color: "#9ca3af" },
-                        iconColor: "#7c3aed",
+                        color: "var(--heading)",
+                        "::placeholder": { color: "var(--muted)" },
+                        iconColor: "var(--primary)",
                       },
                       invalid: { color: "#ef4444", iconColor: "#ef4444" },
                     },
@@ -407,7 +402,7 @@ function CheckoutForm({
         )}
 
         {cardError && (
-          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600 flex items-start gap-2">
+          <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-500 flex items-start gap-2">
             <FiAlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
             {cardError}
           </div>
@@ -418,7 +413,7 @@ function CheckoutForm({
       <button
         type="submit"
         disabled={loading || cart.length === 0}
-        className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-primary py-4 text-sm font-bold text-white shadow-lg hover:bg-primary-dark transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
+        className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-primary py-4 text-sm font-bold text-white shadow-lg hover:bg-primary-dark transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0 cursor-pointer"
       >
         <FiLock className="h-4 w-4" />
         Place Order · ${(getCartTotal(cart) + (getCartTotal(cart) > 75 ? 0 : 9.99)).toFixed(2)}
@@ -432,16 +427,16 @@ function SuccessScreen({ orderId }: { orderId: string }) {
   const router = useRouter();
   return (
     <div className="card-premium p-12 flex flex-col items-center justify-center gap-6 text-center animate-premium-fade">
-      <div className="h-20 w-20 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+      <div className="h-20 w-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
         <FiCheckCircle className="h-10 w-10 text-emerald-500" />
       </div>
       <div className="space-y-2">
-        <h2 className="text-2xl font-extrabold text-text-neutral">Order Placed!</h2>
-        <p className="text-sm text-text-neutral/60 font-medium">
+        <h2 className="text-2xl font-extrabold text-heading">Order Placed!</h2>
+        <p className="text-sm text-body/80 font-medium">
           Thank you for your purchase. We'll email you a confirmation shortly.
         </p>
         {orderId && (
-          <p className="text-xs text-text-neutral/40 font-mono mt-1">
+          <p className="text-xs text-muted font-mono mt-1">
             Order ID: #{orderId.slice(-8).toUpperCase()}
           </p>
         )}
@@ -449,13 +444,13 @@ function SuccessScreen({ orderId }: { orderId: string }) {
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
         <button
           onClick={() => router.push("/dashboard/user/orders")}
-          className="flex-1 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary-dark transition-all"
+          className="flex-1 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary-dark transition-all cursor-pointer shadow-sm"
         >
           View My Orders
         </button>
         <button
           onClick={() => router.push("/products")}
-          className="flex-1 rounded-xl border border-black/[0.06] bg-white/70 px-6 py-3 text-sm font-bold text-text-neutral hover:bg-white transition-all"
+          className="flex-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-heading hover:bg-surface transition-all cursor-pointer"
         >
           Continue Shopping
         </button>
@@ -511,11 +506,11 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="flex-1 bg-background min-h-screen">
+    <main className="flex-1 bg-background min-h-screen transition-colors duration-250">
       {/* Header */}
-      <div className="border-b border-black/[0.04] bg-white/60 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/products" className="flex items-center gap-2 text-xs font-bold text-text-neutral/60 hover:text-primary transition-colors">
+          <Link href="/products" className="flex items-center gap-2 text-xs font-bold text-body hover:text-primary transition-colors">
             <FiArrowLeft className="h-4 w-4" />
             Continue Shopping
           </Link>
@@ -525,8 +520,8 @@ export default function CheckoutPage() {
               ShopPilot AI
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-text-neutral/50">
-            <FiLock className="h-3.5 w-3.5 text-primary/60" />
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+            <FiLock className="h-3.5 w-3.5 text-primary/80" />
             Secure Checkout
           </div>
         </div>

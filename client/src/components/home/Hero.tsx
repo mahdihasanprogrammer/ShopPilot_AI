@@ -31,14 +31,14 @@ export default function Hero() {
           The Future of Shopping
         </span>
 
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-text-neutral leading-[1.1]">
+        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-heading leading-[1.1]">
           Shop Smarter with{" "}
           <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Conversational AI
           </span>
         </h1>
 
-        <p className="text-base sm:text-lg text-text-neutral/70 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+        <p className="text-base sm:text-lg text-body/80 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
           Say goodbye to endless filtering. Simply chat with our intelligent Shopping Assistant to discover products, compare features, and get personalized recommendations in real-time.
         </p>
 
@@ -52,7 +52,7 @@ export default function Hero() {
           </Link>
           <Link
             href="/about"
-            className="rounded-xl border border-border bg-card px-6 py-3.5 text-sm font-semibold text-text-neutral hover:bg-surface transition-all"
+            className="rounded-xl border border-border bg-card px-6 py-3.5 text-sm font-semibold text-heading hover:bg-surface transition-all"
           >
             How it works
           </Link>
@@ -67,7 +67,7 @@ export default function Hero() {
             <RiRobot2Line className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold text-text-neutral">ShopPilot AI Assistant</h3>
+            <h3 className="text-sm font-extrabold text-heading">ShopPilot AI Assistant</h3>
             <span className="text-[10px] font-semibold text-emerald-500 flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Live · Powered by Gemini 2.5 Flash
@@ -81,7 +81,7 @@ export default function Hero() {
         {/* Feature Bullets */}
         <ul className="mt-5 space-y-3">
           {AI_FEATURES.map((f, i) => (
-            <li key={i} className="flex items-start gap-2.5 text-xs font-medium text-text-neutral/70 leading-relaxed">
+            <li key={i} className="flex items-start gap-2.5 text-xs font-medium text-body/80 leading-relaxed">
               <FiCheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
               {f}
             </li>
@@ -91,7 +91,7 @@ export default function Hero() {
         {/* Decorative chat bubble preview */}
         <div className="mt-5 rounded-xl border border-border bg-surface p-3.5 space-y-2.5 text-xs">
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-tl-none bg-white border border-border px-3 py-2 text-text-neutral/75 max-w-[85%] leading-relaxed shadow-xs">
+            <div className="rounded-2xl rounded-tl-none bg-card border border-border px-3 py-2 text-heading/80 max-w-[85%] leading-relaxed shadow-xs">
               Which mechanical keyboard is best under $100?
             </div>
           </div>
@@ -100,7 +100,7 @@ export default function Hero() {
               Based on your preferences, I recommend checking out our top-rated keyboards in the Electronics section…
             </div>
           </div>
-          <p className="text-center text-[9px] text-text-neutral/30 font-semibold uppercase tracking-wider pt-0.5">
+          <p className="text-center text-[9px] text-muted font-semibold uppercase tracking-wider pt-0.5">
             Illustrative preview · Sign in to chat live
           </p>
         </div>

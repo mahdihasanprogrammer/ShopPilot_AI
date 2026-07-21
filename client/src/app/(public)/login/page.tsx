@@ -71,7 +71,7 @@ function LoginForm() {
     const demoPassword = "Password123!";
     setEmail(demoEmail);
     setPassword(demoPassword);
-    
+
     setLoading(true);
     setErrors({});
     try {
@@ -86,10 +86,10 @@ function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md space-y-8 rounded-2xl border border-bg-secondary p-8 bg-background shadow-lg transition-all hover:shadow-xl">
+    <div className="w-full max-w-md space-y-8 rounded-2xl border border-border p-8 bg-card shadow-lg transition-all hover:shadow-xl">
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-text-neutral">Welcome Back</h1>
-        <p className="mt-2 text-sm text-text-neutral/60">Sign in to your ShopPilot account</p>
+        <h1 className="text-3xl font-bold tracking-tight text-heading">Welcome Back</h1>
+        <p className="mt-2 text-sm text-body/75">Sign in to your ShopPilot account</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -127,8 +127,8 @@ function LoginForm() {
       </form>
 
       <div className="relative my-4 flex items-center justify-center">
-        <div className="absolute inset-0 w-full border-t border-bg-secondary"></div>
-        <span className="relative bg-background px-4 text-xs font-semibold uppercase tracking-wider text-text-neutral/40">
+        <div className="absolute inset-0 w-full border-t border-border"></div>
+        <span className="relative bg-card px-4 text-xs font-semibold uppercase tracking-wider text-muted">
           Or Continue With
         </span>
       </div>
@@ -138,7 +138,7 @@ function LoginForm() {
       {/* Demo Access */}
       <DemoLoginButton onSelectRole={handleDemoSelect} disabled={loading} />
 
-      <p className="text-center text-xs text-text-neutral/60">
+      <p className="text-center text-xs text-body/75">
         Don&apos;t have an account?{" "}
         <Link href="/register" className="font-semibold text-primary hover:underline cursor-pointer">
           Register Here
@@ -150,10 +150,10 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="flex-1 flex items-center justify-center px-4 py-12 bg-gradient-to-b from-background to-bg-secondary">
+    <main className="flex-1 flex items-center justify-center px-4 py-12 bg-background transition-colors duration-250">
       <Suspense
         fallback={
-          <div className="w-full max-w-md animate-pulse border border-bg-secondary rounded-2xl p-8 bg-background space-y-6">
+          <div className="w-full max-w-md animate-pulse border border-border rounded-2xl p-8 bg-card space-y-6">
             <div className="h-6 w-1/3 mx-auto rounded bg-bg-secondary"></div>
             <div className="h-10 w-full rounded bg-bg-secondary"></div>
             <div className="h-10 w-full rounded bg-bg-secondary"></div>

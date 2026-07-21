@@ -69,15 +69,15 @@ export default function RecommendationsSection() {
   // If user is guest, show a premium teaser promo block instead of completely hiding
   if (!user) {
     return (
-      <section className="rounded-3xl border border-black/[0.05] bg-gradient-to-br from-primary/[0.03] via-background to-accent/[0.03] p-8 md:p-12 text-center space-y-6 max-w-4xl mx-auto my-8">
+      <section className="rounded-3xl border border-border bg-gradient-to-br from-primary/5 via-card to-accent/5 p-8 md:p-12 text-center space-y-6 max-w-4xl mx-auto my-8 transition-colors duration-250">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
           <RiRobot2Line className="h-7 w-7" />
         </div>
         <div className="space-y-2 max-w-xl mx-auto">
-          <h2 className="text-xl md:text-2xl font-extrabold text-text-neutral tracking-tight">
+          <h2 className="text-xl md:text-2xl font-extrabold text-heading tracking-tight">
             Personalized AI Recommendations
           </h2>
-          <p className="text-sm text-text-neutral/60 leading-relaxed font-medium">
+          <p className="text-sm text-body/80 leading-relaxed font-medium">
             Log in to unlock our advanced agentic recommendation engine. ShopPilot AI analyzes your order history and shopping cart to curate custom selections.
           </p>
         </div>
@@ -106,13 +106,13 @@ export default function RecommendationsSection() {
             <RiRobot2Line className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg font-extrabold text-text-neutral tracking-tight flex items-center gap-1.5">
+            <h2 className="text-lg font-extrabold text-heading tracking-tight flex items-center gap-1.5">
               ShopPilot Recommendation Engine
               <span className="inline-flex items-center gap-0.5 rounded-full bg-accent/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-accent">
                 <RiSparklingLine className="h-3 w-3" /> Agentic AI
               </span>
             </h2>
-            <p className="text-xs text-text-neutral/50 font-medium mt-0.5">
+            <p className="text-xs text-body/75 font-medium mt-0.5">
               Personalized candidate products selected by Claude based on your past orders and cart items.
             </p>
           </div>
@@ -126,13 +126,13 @@ export default function RecommendationsSection() {
               value={refinement}
               onChange={(e) => setRefinement(e.target.value)}
               placeholder="Refine (e.g., 'Under $50', 'only tech')"
-              className="w-full rounded-xl border border-black/[0.06] bg-white px-3.5 py-2 text-xs font-semibold text-text-neutral placeholder:text-text-neutral/30 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all"
+              className="w-full rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-semibold text-heading placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
             {activeQuery && (
               <button
                 type="button"
                 onClick={handleClearRefinement}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-text-neutral/40 hover:text-red-500 cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted hover:text-red-500 cursor-pointer"
               >
                 Clear
               </button>
@@ -151,7 +151,7 @@ export default function RecommendationsSection() {
 
       {/* Query notification badge */}
       {activeQuery && (
-        <div className="inline-flex items-center gap-1.5 rounded-lg bg-primary/5 border border-primary/10 px-3 py-1.5 text-xs text-primary font-semibold">
+        <div className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs text-primary font-semibold">
           <span>Refined filtering by: <strong>&ldquo;{activeQuery}&rdquo;</strong></span>
         </div>
       )}
@@ -160,25 +160,25 @@ export default function RecommendationsSection() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="animate-pulse border border-black/[0.05] rounded-2xl p-5 bg-white space-y-4">
-              <div className="aspect-square bg-gray-100 rounded-xl" />
-              <div className="h-4 bg-gray-100 rounded w-2/3" />
-              <div className="h-3 bg-gray-100 rounded w-1/2" />
-              <div className="h-8 bg-gray-50 rounded-xl" />
+            <div key={i} className="animate-pulse border border-border rounded-2xl p-5 bg-card space-y-4">
+              <div className="aspect-square bg-bg-secondary rounded-xl" />
+              <div className="h-4 bg-bg-secondary rounded w-2/3" />
+              <div className="h-3 bg-bg-secondary rounded w-1/2" />
+              <div className="h-8 bg-bg-secondary rounded-xl" />
             </div>
           ))}
         </div>
       ) : error ? (
         /* Error state */
-        <div className="flex items-center gap-2 rounded-2xl border border-red-100 bg-red-50/50 p-5 text-sm font-medium text-red-600">
+        <div className="flex items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 p-5 text-sm font-medium text-red-500">
           <FiAlertCircle className="h-5 w-5 shrink-0" />
           <span>{error}</span>
         </div>
       ) : recommendations.length === 0 ? (
         /* Empty state */
-        <div className="text-center py-12 border border-dashed border-black/[0.06] rounded-2xl bg-white space-y-2">
-          <p className="text-sm font-bold text-text-neutral/50">No recommendations found</p>
-          <p className="text-xs text-text-neutral/40">Try resetting filters or expanding your active profile list.</p>
+        <div className="text-center py-12 border border-dashed border-border rounded-2xl bg-card space-y-2">
+          <p className="text-sm font-bold text-heading/70">No recommendations found</p>
+          <p className="text-xs text-muted">Try resetting filters or expanding your active profile list.</p>
         </div>
       ) : (
         /* Recommendation Grid cards rendering */
@@ -188,11 +188,11 @@ export default function RecommendationsSection() {
             return (
               <div
                 key={prodId}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-black/[0.05] bg-white shadow-sm hover:shadow-md transition-all duration-300"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all duration-300"
               >
                 <div>
                   {/* Image display */}
-                  <div className="relative aspect-video w-full bg-black/[0.02] overflow-hidden">
+                  <div className="relative aspect-video w-full bg-bg-secondary/60 overflow-hidden">
                     {prod.images?.[0] ? (
                       <img
                         src={prod.images[0]}
@@ -200,35 +200,35 @@ export default function RecommendationsSection() {
                         className="h-full w-full object-cover object-center group-hover:scale-105 transition-all duration-500"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-text-neutral/20 bg-gray-50">
+                      <div className="flex h-full w-full items-center justify-center text-muted bg-bg-secondary">
                         No Image
                       </div>
                     )}
-                    <span className="absolute top-2.5 left-2.5 rounded-full bg-white/95 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-accent shadow-sm border border-black/[0.04]">
+                    <span className="absolute top-2.5 left-2.5 rounded-full bg-card/95 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-accent shadow-sm border border-border">
                       {prod.category}
                     </span>
                   </div>
 
                   {/* Card Content info */}
                   <div className="p-4 space-y-2">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-text-neutral/40 leading-none">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-muted leading-none">
                       {prod.brand || "Catalog"}
                     </h3>
-                    <h4 className="text-sm font-bold text-text-neutral group-hover:text-primary transition-colors leading-snug line-clamp-1">
+                    <h4 className="text-sm font-bold text-heading group-hover:text-primary transition-colors leading-snug line-clamp-1">
                       {prod.title}
                     </h4>
-                    <p className="text-xs font-semibold text-text-neutral">${prod.price.toFixed(2)}</p>
+                    <p className="text-xs font-semibold text-heading">${prod.price.toFixed(2)}</p>
                   </div>
                 </div>
 
                 {/* Reasoning segment block (stands out, premium styling) */}
                 <div className="px-4 pb-4 flex-1 flex flex-col justify-between">
                   {prod.reasoning && (
-                    <div className="bg-primary/[0.03] border border-primary/10 rounded-xl p-3 mb-4 space-y-1">
+                    <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 mb-4 space-y-1">
                       <p className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1">
                         <RiSparklingLine className="h-3 w-3 animate-pulse" /> AI Reasoning
                       </p>
-                      <p className="text-[11px] font-medium text-text-neutral/70 leading-relaxed italic">
+                      <p className="text-[11px] font-medium text-body/90 leading-relaxed italic">
                         &ldquo;{prod.reasoning}&rdquo;
                       </p>
                     </div>
@@ -238,7 +238,7 @@ export default function RecommendationsSection() {
                   <div className="flex items-center gap-2 mt-auto">
                     <Link
                       href={`/products/${prodId}`}
-                      className="flex-1 flex h-9 items-center justify-center gap-1.5 rounded-xl border border-black/[0.08] text-xs font-bold text-text-neutral/70 hover:text-primary hover:border-primary/20 hover:bg-primary/[0.03] transition-all duration-200 cursor-pointer"
+                      className="flex-1 flex h-9 items-center justify-center gap-1.5 rounded-xl border border-border text-xs font-bold text-body hover:text-primary hover:border-primary/30 hover:bg-primary/10 transition-all duration-200 cursor-pointer"
                     >
                       <FiEye className="h-3.5 w-3.5" />
                       Details

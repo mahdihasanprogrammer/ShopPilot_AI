@@ -33,7 +33,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Block guest users
     if (!user) {
       toast.error("Please log in to continue.");
@@ -53,7 +53,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       price: product.price,
       image: product.images?.[0],
     });
-    
+
     toast.success(`"${product.title}" added to cart!`);
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
@@ -62,10 +62,10 @@ export default function ProductCard({ product }: ProductCardProps) {
   const productId = product.id || String((product as any)._id);
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-black/[0.05] bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+    <div className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
       {/* Product Image */}
       <Link href={`/products/${productId}`}>
-        <div className="relative aspect-square w-full overflow-hidden bg-black/[0.02]">
+        <div className="relative aspect-square w-full overflow-hidden bg-bg-secondary/60">
           {product.images?.[0] ? (
             <img
               src={product.images[0]}
@@ -73,7 +73,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="h-full w-full object-cover object-center group-hover:scale-[1.04] transition-transform duration-500"
             />
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-text-neutral/20">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted">
               <HiOutlinePhotograph className="h-10 w-10" />
               <span className="text-xs font-medium">No Image</span>
             </div>
@@ -89,11 +89,11 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Card Body */}
       <div className="p-4">
         <Link href={`/products/${productId}`}>
-          <h3 className="text-sm font-bold text-text-neutral hover:text-primary transition-colors line-clamp-1 leading-snug">
+          <h3 className="text-sm font-bold text-heading hover:text-primary transition-colors line-clamp-1 leading-snug">
             {product.title}
           </h3>
         </Link>
-        <p className="mt-1 text-[11px] text-text-neutral/50 line-clamp-2 font-medium leading-relaxed">
+        <p className="mt-1 text-[11px] text-body/80 line-clamp-2 font-medium leading-relaxed">
           {product.shortDescription}
         </p>
 
@@ -101,19 +101,19 @@ export default function ProductCard({ product }: ProductCardProps) {
         {product.rating && (
           <div className="flex items-center gap-1 mt-1.5">
             <MdStar className="h-3.5 w-3.5 text-amber-400" />
-            <span className="text-[11px] font-bold text-text-neutral/60">{product.rating.toFixed(1)}</span>
+            <span className="text-[11px] font-bold text-body/80">{product.rating.toFixed(1)}</span>
           </div>
         )}
 
         {/* Action row: Price | Details icon | Add to Cart */}
         <div className="mt-3.5 flex items-center gap-2">
           <div className="flex-1 min-w-0">
-            <span className="text-base font-extrabold text-text-neutral">
+            <span className="text-base font-extrabold text-heading">
               ${product.price.toFixed(2)}
             </span>
             {/* Out of stock indicator */}
             {product.stock === 0 && (
-              <span className="ml-2 text-[9px] font-bold uppercase tracking-wider text-red-500 bg-red-50 border border-red-100 rounded-full px-2 py-0.5">
+              <span className="ml-2 text-[9px] font-bold uppercase tracking-wider text-red-500 bg-red-500/10 border border-red-500/20 rounded-full px-2 py-0.5">
                 Out of Stock
               </span>
             )}
@@ -123,12 +123,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           <Link
             href={`/products/${productId}`}
             title="View Details"
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-black/[0.06] text-text-neutral/50 hover:text-primary hover:border-primary/30 hover:bg-primary/[0.04] transition-all duration-200 shrink-0"
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border text-muted hover:text-primary hover:border-primary/30 hover:bg-primary/10 transition-all duration-200 shrink-0"
           >
             <FiEye className="h-4 w-4" />
           </Link>
 
-          {/* Add to Cart — blocks admins with toast error, works for users */}
+          {/* Add to Cart */}
           {mounted && (
             <button
               onClick={handleAddToCart}
@@ -136,10 +136,10 @@ export default function ProductCard({ product }: ProductCardProps) {
               title={product.stock === 0 ? "Out of Stock" : added ? "Added!" : "Add to Cart"}
               className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
                 product.stock === 0
-                  ? "bg-gray-100 text-gray-400 border border-gray-200"
+                  ? "bg-bg-secondary text-muted border border-border"
                   : added
-                  ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                  : "bg-primary/[0.07] text-primary hover:bg-primary hover:text-white"
+                  ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                  : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
               }`}
             >
               {product.stock === 0 ? (
