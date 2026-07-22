@@ -5,7 +5,7 @@ import { RiRobot2Line, RiSearch2Line, RiSecurePaymentLine, RiUserHeartLine } fro
 const FEATURES = [
   {
     title: "AI Shopping Assistant",
-    description: "Our conversational assistant runs live Claude intelligence to summarize features, resolve inquiries, and compare items instantly.",
+    description: "Our conversational assistant runs live Gemini 3.5 Flash intelligence to summarize features, resolve inquiries, and compare items instantly.",
     icon: RiRobot2Line,
     color: "bg-primary/10 text-primary border-primary/20",
   },

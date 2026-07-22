@@ -5,7 +5,7 @@ import { RiSparklingFill, RiRobot2Line, RiArrowRightLine, RiChatSmile3Line } fro
 import { FiCheckCircle } from "react-icons/fi";
 
 const AI_FEATURES = [
-  "Real-time streaming responses powered by Gemini 2.5 Flash",
+  "Real-time streaming responses powered by Gemini 3.5 Flash",
   "Context-aware: loads product details when viewing an item",
   "Bilingual support — chat in English or Bengali",
   "Personalized picks based on your orders and cart",
@@ -70,7 +70,7 @@ export default function Hero() {
             <h3 className="text-sm font-extrabold text-heading">ShopPilot AI Assistant</h3>
             <span className="text-[10px] font-semibold text-emerald-500 flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Live · Powered by Gemini 2.5 Flash
+              Live · Powered by Gemini 3.5 Flash
             </span>
           </div>
           <span className="ml-auto rounded-full bg-accent/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-accent border border-accent/20">

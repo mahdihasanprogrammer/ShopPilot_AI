@@ -55,7 +55,7 @@ export default function AISummaryCard({ title, category, description }: AISummar
           </div>
           <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">
             <RiRobot2Line className="h-3 w-3" />
-            Gemini 2.5 Flash
+            Gemini 3.5 Flash
           </span>
         </div>
 
@@ -74,7 +74,7 @@ export default function AISummaryCard({ title, category, description }: AISummar
         <div className="flex items-start gap-1.5 text-[10px] text-muted bg-surface border border-border rounded-xl p-2.5">
           <RiInformationLine className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" />
           <p className="leading-relaxed font-medium">
-            This buying guide is dynamically compiled by Gemini 2.5 Flash from the catalog title, specifications, and customer review notes.
+            This buying guide is dynamically compiled by Gemini 3.5 Flash from the catalog title, specifications, and customer review notes.
           </p>
         </div>
       </div>

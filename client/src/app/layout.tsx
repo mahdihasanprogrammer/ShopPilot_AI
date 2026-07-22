@@ -14,7 +14,7 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "ShopPilot AI - AI-Powered E-Commerce Assistant",
-  description: "ShopPilot AI is a premium e-commerce platform offering smart agentic recommendations and a site-wide conversational shopping assistant powered by Claude.",
+  description: "ShopPilot AI is a premium e-commerce platform offering smart agentic recommendations and a site-wide conversational shopping assistant powered by Gemini 3.5 Flash.",
 };
 
 export default function RootLayout({

@@ -113,7 +113,7 @@ export default function RecommendationsSection() {
               </span>
             </h2>
             <p className="text-xs text-body/75 font-medium mt-0.5">
-              Personalized candidate products selected by Claude based on your past orders and cart items.
+              Personalized candidate products selected by Gemini 3.5 Flash based on your past orders and cart items.
             </p>
           </div>
         </div>
