@@ -306,7 +306,7 @@ The client is a standard Next.js app — Vercel auto-detects it.
 
 - GitHub: [github.com/mahdihasanprogrammer](https://github.com/mahdihasanprogrammer)
 - LinkedIn: https://www.linkedin.com/in/mahdi-hasan-web
-- Portfolio: *Add your Portfolio URL*
+- Portfolio: https://my-personal-portfolio-final.vercel.app
 
 ---
 
