@@ -10,7 +10,7 @@ import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5200;
 
 // Enable CORS
 const allowedOrigins = [
